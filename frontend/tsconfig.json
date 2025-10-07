@@ -1,0 +1,26 @@
+{
+  "compilerOptions": {
+    "baseUrl": "./",
+    "paths": {
+      "@/*": ["./src/*"],
+      "@shared/*": ["./src/shared/*"],
+      "@sam/*": ["./src/sam/*"],
+      "@claire/*": ["./src/claire/*"],
+      "@paul/*": ["./src/paul/*"],
+      "*": ["src/*"]
+    },
+    "outDir": "dist",
+    "moduleResolution": "node",
+    "target": "esnext",
+    "module": "esnext",
+    "jsx": "react-jsx",
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "resolveJsonModule": true,
+    "types": ["vitest/globals", "node", "@testing-library/jest-dom"]
+  },
+  "include": ["src/**/*", "tests/**/*"],
+  "exclude": ["node_modules", "dist", "tools/**/*"]
+}

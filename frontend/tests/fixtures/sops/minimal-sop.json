@@ -1,0 +1,47 @@
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "id": "minimal-sop-fixture",
+  "name": "Minimal SOP",
+  "title": "Minimal Test SOP",
+  "version": "1.0",
+  "author": "test-author",
+  "approver": "test-approver",
+  "date-published": "2025-01-15",
+  "url": "http://localhost:3000/test",
+  "license": "MIT",
+  "keywords": ["test", "minimal"],
+  "applicationCategory": "Laboratory Protocol",
+  "requires": [],
+  "exported_fields": [],
+  "status": "published",
+  "description": "Minimal test SOP with single field",
+  "taskgroups": [
+    {
+      "id": "single_taskgroup",
+      "children": [
+        {
+          "id": "single_field",
+          "children": [],
+          "name": "Single Field",
+          "title": "The Only Field",
+          "description": "This is the only field in this minimal SOP",
+          "type": "string",
+          "required": true,
+          "validation": { "min_length": 1 }
+        }
+      ],
+      "name": "Single Task",
+      "title": "Single Task Group"
+    }
+  ],
+  "metadata": {
+    "tags": ["test", "minimal"],
+    "created_by": "test-system",
+    "created_date": "2025-01-15",
+    "modified_date": "2025-01-15",
+    "modified_by": "test-system",
+    "is_draft": false,
+    "status": "final"
+  }
+} 

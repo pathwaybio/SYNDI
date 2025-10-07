@@ -1,0 +1,229 @@
+# SPDX-FileCopyrightText: 2024-2025 Pathway Bio, Inc. <https://pwbio.ai>
+# SPDX-FileContributor: Kimberly Robasky
+# SPDX-License-Identifier: Apache-2.0
+
+'@context': https://schema.org
+'@type': SoftwareApplication
+id: 'Test1'
+name: SOP A
+title: Test SOP A - Variable Export
+version: '1'
+author: krobasky
+approver: krobasky
+date-published: '2025-07-13'
+url: http://localhost:3000/claire/sop=1
+license: MIT
+keywords:
+  - test
+applicationCategory: Laboratory Protocol
+requires: []
+exported_fields: []
+taskgroups:
+  - id: taskgroup_1752199335439
+    _schemaType: TaskGroup
+    children:
+      - id: task_1752430671579
+        _schemaType: Task
+        children:
+          - id: ProjectId
+            _schemaType: Field
+            children:
+              - id: elnfilenamecomponent_1752431819084
+                _schemaType: ELNFilenameComponent
+                children: []
+                parent:
+                  - ProjectId
+                filename_component: true
+                order: 1
+              - id: exportconfiguration_1752432122461
+                _schemaType: ExportConfiguration
+                children: []
+                parent:
+                  - ProjectId
+                enabled: true
+                value_immutable: true
+            parent:
+              - task_1752430671579
+            name: Project Id
+            title: Project ID associated with this SOP
+            type: string
+            required: true
+            validation:
+              min_length: 1
+              max_length: 80
+          - id: PatientId
+            _schemaType: Field
+            children:
+              - id: elnfilenamecomponent_1752432468772
+                _schemaType: ELNFilenameComponent
+                children: []
+                parent:
+                  - PatientId
+                order: 2
+                filename_component: true
+              - id: exportconfiguration_1752432479446
+                _schemaType: ExportConfiguration
+                children: []
+                parent:
+                  - PatientId
+                enabled: true
+                value_immutable: true
+            parent:
+              - task_1752430671579
+            name: Patient ID
+            title: ID of the patient for this SOP
+            type: string
+            required: true
+            validation:
+              min_length: 1
+              max_length: 80
+          - id: field_1752432513644
+            _schemaType: Field
+            children: []
+            parent:
+              - task_1752430671579
+            name: Procedure Date
+            title: Date that the procedure was done on the patient
+            type: date
+          - id: field_1752432583901
+            _schemaType: Field
+            children: []
+            parent:
+              - task_1752430671579
+            name: Generic Keep Empty
+            title: Generic variable to test default handling, keep empty
+            type: string
+        parent:
+          - taskgroup_1752199335439
+        ordinal: 1
+        name: SOP Parameters
+        title: General information Collection
+        description: Collect and record SOP-wide information
+        ui_config:
+          icon: clipboard-list
+          card_variant: outline
+          collapsible: true
+      - id: taskgroup_1752199367994
+        _schemaType: TaskGroup
+        children:
+          - id: task_1752199378465
+            _schemaType: Task
+            children:
+              - id: field_1752432805674
+                _schemaType: Field
+                children:
+                  - id: exportconfiguration_1752432904139
+                    _schemaType: ExportConfiguration
+                    children: []
+                    parent:
+                      - field_1752432805674
+                    enabled: true
+                    name: http://localhost:3000/sop=1
+                    value_immutable: true
+                parent:
+                  - task_1752199378465
+                name: Sample Type
+                title: Type of sample
+                type: enum
+                enum_values:
+                  - tissue
+                  - blood
+                  - other
+                required: true
+              - id: field_1752433017942
+                _schemaType: Field
+                children:
+                  - id: exportconfiguration_1752433057588
+                    _schemaType: ExportConfiguration
+                    children: []
+                    parent:
+                      - field_1752433017942
+                    enabled: true
+                    value_immutable: true
+                    name: http://localhost:3000/sop=1
+                parent:
+                  - task_1752199378465
+                name: Exported Keep Empty
+                title: Keep Empty(1)
+                type: string
+            parent:
+              - taskgroup_1752199367994
+            name: Step 1
+            title: Record sample info
+        parent:
+          - taskgroup_1752199335439
+        title: Procedure task group
+        name: Procedures
+        description: just a test for procedures
+        ui_config:
+          collapsible: true
+          default_expanded: true
+          card_variant: default
+          icon: flask-conical
+      - id: taskgroup_1752433140046
+        _schemaType: TaskGroup
+        children:
+          - id: task_1752433244749
+            _schemaType: Task
+            children:
+              - id: table_1752433307598
+                _schemaType: Table
+                children: []
+                parent:
+                  - task_1752433244749
+                name: Samples
+                title: Samples
+                column_mutability: mutable
+                column_name_mutability: mutable
+                row_mutability: immutable
+                ui_config:
+                  component_type: editable-table
+                  pagination: true
+                  sorting: true
+                  filtering: true
+                  virtual_scrolling: true
+                  row_selection: true
+                  density: compact
+            parent:
+              - taskgroup_1752433140046
+            ordinal: 1
+            name: Record sample info
+            title: Sample Table
+            description: Collect and label the sample
+            ui_config:
+              icon: grid
+              card_variant: default
+        parent:
+          - taskgroup_1752199335439
+        name: Samples
+        title: Sample identification and characterization
+        ui_config:
+          card_variant: default
+          icon: table
+    title: Basic project and patient information
+    name: General Information
+    description: This information is project-wide and not task-specific (not related to a material or a procedure)
+    ui_config:
+      default_expanded: true
+      card_variant: default
+      collapsible: false
+      icon: info
+metadata:
+  tags:
+    - test
+  created_by: krobasky
+  created_date: '2025-07-13'
+  modified_date: '2025-07-13'
+  modified_by: krobasky
+  is_draft: false
+  status: final
+  exported_at: '2025-07-19T23:40:04.267Z'
+  sop_permissions:
+    public: true
+  eln_default_permissions:
+    public: true
+description: Minimal test case for variable export
+status: draft
+date-deployed: '2025-07-13'
+bioschemas_type: TrainingMaterial
+conformsTo: https://bioschemas.org/profiles/ComputationalTool/1.0-RELEASE

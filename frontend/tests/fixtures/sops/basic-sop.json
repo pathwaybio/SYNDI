@@ -1,0 +1,158 @@
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "id": "basic-sop-fixture",
+  "name": "Basic Test SOP",
+  "title": "Basic SOP for E2E Testing",
+  "version": "1.0",
+  "author": "test-author",
+  "approver": "test-approver",
+  "date-published": "2025-01-15",
+  "url": "http://localhost:3000/test",
+  "license": "MIT",
+  "keywords": ["test", "e2e"],
+  "applicationCategory": "Laboratory Protocol",
+  "requires": [],
+  "exported_fields": [],
+  "status": "published",
+  "description": "Basic test SOP for E2E testing",
+  "taskgroups": [
+    {
+      "id": "taskgroup_basic_info",
+      "children": [
+        {
+          "id": "task_patient_data",
+          "children": [
+            {
+              "id": "patient_id",
+              "children": [],
+              "parent": ["task_patient_data"],
+              "name": "Patient ID",
+              "title": "Patient Identifier",
+              "description": "Unique identifier for the patient",
+              "type": "string",
+              "required": true,
+              "validation": {
+                "min_length": 1,
+                "max_length": 50
+              }
+            },
+            {
+              "id": "patient_age",
+              "children": [],
+              "parent": ["task_patient_data"],
+              "name": "Patient Age",
+              "title": "Age of Patient",
+              "description": "Age of the patient in years",
+              "type": "integer",
+              "required": true,
+              "validation": {
+                "minimum": 0,
+                "maximum": 150
+              }
+            },
+            {
+              "id": "consent_given",
+              "children": [],
+              "parent": ["task_patient_data"],
+              "name": "Consent Given",
+              "title": "Informed Consent",
+              "description": "Whether informed consent was obtained",
+              "type": "boolean",
+              "required": true
+            }
+          ],
+          "parent": ["taskgroup_basic_info"],
+          "ordinal": 1,
+          "name": "Patient Data",
+          "title": "Patient Information Collection",
+          "description": "Collect and record patient information",
+          "ui_config": {
+            "icon": "user",
+            "card_variant": "outline",
+            "collapsible": true
+          }
+        }
+      ],
+      "parent": [],
+      "name": "Basic Information",
+      "title": "Patient and Study Information",
+      "description": "Collect basic patient and study identifiers",
+      "ui_config": {
+        "icon": "clipboard-list",
+        "default_expanded": true,
+        "card_variant": "default",
+        "collapsible": false
+      }
+    },
+    {
+      "id": "taskgroup_sample_collection",
+      "children": [
+        {
+          "id": "task_collection_details",
+          "children": [
+            {
+              "id": "collection_date",
+              "children": [],
+              "parent": ["task_collection_details"],
+              "name": "Collection Date",
+              "title": "Sample Collection Date",
+              "description": "Date when the sample was collected",
+              "type": "date",
+              "required": true
+            },
+            {
+              "id": "sample_type",
+              "children": [],
+              "parent": ["task_collection_details"],
+              "name": "Sample Type",
+              "title": "Type of Sample",
+              "description": "The type of biological sample collected",
+              "type": "enum",
+              "required": false,
+              "enum_values": ["blood", "saliva", "tissue", "urine", "other"]
+            },
+            {
+              "id": "sample_notes",
+              "children": [],
+              "parent": ["task_collection_details"],
+              "name": "Collection Notes",
+              "title": "Additional Notes",
+              "description": "Any additional notes about sample collection",
+              "type": "array",
+              "required": false
+            }
+          ],
+          "parent": ["taskgroup_sample_collection"],
+          "ordinal": 1,
+          "name": "Collection Details",
+          "title": "Sample Collection Procedures",
+          "description": "Record details about sample collection",
+          "ui_config": {
+            "icon": "vial",
+            "card_variant": "default"
+          }
+        }
+      ],
+      "parent": [],
+      "name": "Sample Collection",
+      "title": "Sample Collection Procedures",
+      "description": "Procedures for collecting biological samples",
+      "ui_config": {
+        "icon": "flask-conical",
+        "collapsible": true,
+        "default_expanded": true,
+        "card_variant": "default"
+      }
+    }
+  ],
+  "metadata": {
+    "tags": ["test", "e2e"],
+    "created_by": "test-system",
+    "created_date": "2025-01-15",
+    "modified_date": "2025-01-15",
+    "modified_by": "test-system",
+    "is_draft": false,
+    "status": "final"
+  }
+} 

@@ -1,0 +1,115 @@
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "id": "all-types-sop-fixture",
+  "name": "All Field Types SOP",
+  "title": "SOP Testing All Supported Field Types",
+  "version": "1.0",
+  "author": "test-author",
+  "approver": "test-approver",
+  "date-published": "2025-01-15",
+  "url": "http://localhost:3000/test",
+  "license": "MIT",
+  "keywords": ["test", "field-types"],
+  "applicationCategory": "Laboratory Protocol",
+  "requires": [],
+  "exported_fields": [],
+  "status": "published",
+  "description": "SOP for testing all supported field types",
+  "taskgroups": [
+    {
+      "id": "field_types_demo",
+      "children": [
+        {
+          "id": "string_field",
+          "children": [],
+          "name": "String Field",
+          "title": "Text Input Field",
+          "description": "A standard text input field",
+          "type": "string",
+          "required": true,
+          "validation": { "min_length": 1, "max_length": 100 }
+        },
+        {
+          "id": "number_field",
+          "children": [],
+          "name": "Number Field",
+          "title": "Decimal Number Field",
+          "description": "A field for decimal numbers",
+          "type": "number",
+          "required": false,
+          "validation": { "minimum": 0, "maximum": 1000 }
+        },
+        {
+          "id": "integer_field",
+          "children": [],
+          "name": "Integer Field",
+          "title": "Whole Number Field",
+          "description": "A field for whole numbers only",
+          "type": "integer",
+          "required": false,
+          "validation": { "minimum": 1, "maximum": 100 }
+        },
+        {
+          "id": "boolean_field",
+          "children": [],
+          "name": "Boolean Field",
+          "title": "True/False Field",
+          "description": "A checkbox field for yes/no answers",
+          "type": "boolean",
+          "required": false
+        },
+        {
+          "id": "date_field",
+          "children": [],
+          "name": "Date Field",
+          "title": "Date Selection Field",
+          "description": "A field for selecting dates",
+          "type": "date",
+          "required": false
+        },
+        {
+          "id": "datetime_field",
+          "children": [],
+          "name": "DateTime Field",
+          "title": "Date and Time Field",
+          "description": "A field for selecting both date and time",
+          "type": "datetime",
+          "required": false
+        },
+        {
+          "id": "enum_field",
+          "children": [],
+          "name": "Enum Field",
+          "title": "Selection Field",
+          "description": "A field with predefined options",
+          "type": "enum",
+          "required": false,
+          "enum_values": ["option1", "option2", "option3", "option4"]
+        },
+        {
+          "id": "array_field",
+          "children": [],
+          "name": "Array Field",
+          "title": "Multiple Values Field",
+          "description": "A field that accepts multiple values",
+          "type": "array",
+          "required": false
+        }
+      ],
+      "name": "Field Types",
+      "title": "All Supported Field Types",
+      "description": "Demonstration of all supported field types",
+      "ui_config": { "icon": "type" }
+    }
+  ],
+  "metadata": {
+    "tags": ["test", "field-types"],
+    "created_by": "test-system",
+    "created_date": "2025-01-15",
+    "modified_date": "2025-01-15",
+    "modified_by": "test-system",
+    "is_draft": false,
+    "status": "final"
+  }
+} 

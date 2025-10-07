@@ -1,0 +1,16 @@
+{
+  "values": {
+    "patient_id": "PT-002",
+    "collection_date": "2025-01-15",
+    "sample_type": "saliva",
+    "string_field": "Partial test value",
+    "number_field": 67.89,
+    "date_field": "2025-01-16"
+  },
+  "metadata": {
+    "sop_id": "basic-sop-fixture",
+    "user_id": "test_user",
+    "timestamp": "2025-01-15T11:15:00Z",
+    "completion_percentage": 60
+  }
+} 

@@ -1,0 +1,12 @@
+{
+  "values": {
+    "deep_field": "Deep Value",
+    "another_deep_field": 123.45
+  },
+  "metadata": {
+    "sop_id": "complex-nested-sop",
+    "user_id": "test_user",
+    "timestamp": "2025-01-15T10:30:00Z",
+    "completion_percentage": 100
+  }
+} 

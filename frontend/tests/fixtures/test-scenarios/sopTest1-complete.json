@@ -1,0 +1,26 @@
+{
+  "name": "sopTest1 Complete Scenario",
+  "description": "Complete form data for sopTest1.yaml with all required fields filled",
+  "sop_id": "Test1",
+  "eln_data": {
+    "values": {
+      "ProjectId": "P1",
+      "PatientId": "PT001",
+      "field_1752432513644": "2025-01-15",
+      "field_1752432805674": "blood",
+      "task_1752199378465": "Step 1 completed successfully",
+      "task_1752433244749": "Sample table data with multiple rows"
+    },
+    "metadata": {
+      "sop_id": "Test1",
+      "user_id": "test_user",
+      "timestamp": "2025-01-15T10:30:00Z",
+      "completion_percentage": 100
+    }
+  },
+  "expected_validation": {
+    "isValid": true,
+    "missingRequiredFields": [],
+    "totalFields": 6
+  }
+} 

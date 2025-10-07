@@ -1,0 +1,232 @@
+<!-- 
+SPDX-FileCopyrightText: 2024-2025 Pathway Bio, Inc. <https://pwbio.ai>
+SPDX-FileContributor: Kimberly Robasky
+SPDX-License-Identifier: Apache-2.0
+ -->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ReviewSubmitPanel Test</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f9fafb;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 24px;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+        
+        /* Test attributes */
+        [data-testid="review-submit-panel"] {
+            border: 2px dashed #e5e7eb;
+            padding: 16px;
+            border-radius: 6px;
+        }
+        
+        .field-row {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 16px;
+            padding: 8px 0;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        
+        .field-name {
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        
+        .field-value {
+            font-family: monospace;
+            background: #f3f4f6;
+            padding: 4px 8px;
+            border-radius: 4px;
+        }
+        
+        .required {
+            color: #dc2626;
+        }
+        
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        
+        .badge-success {
+            background: #dcfce7;
+            color: #166534;
+        }
+        
+        .badge-error {
+            background: #fef2f2;
+            color: #dc2626;
+        }
+        
+        .badge-outline {
+            background: white;
+            border: 1px solid #e5e7eb;
+            color: #6b7280;
+        }
+        
+        .taskgroup-card {
+            margin-bottom: 16px;
+            border: 1px solid #e5e7eb;
+            border-radius: 6px;
+            overflow: hidden;
+        }
+        
+        .card-header {
+            background: #f9fafb;
+            padding: 16px;
+            border-bottom: 1px solid #e5e7eb;
+            display: flex;
+            justify-content: between;
+            align-items: center;
+            cursor: pointer;
+        }
+        
+        .card-content {
+            padding: 16px;
+        }
+        
+        .submit-btn {
+            background: #2563eb;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .submit-btn:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>ReviewSubmitPanel Test</h1>
+        <div id="test-panel" data-testid="review-submit-panel">
+            <!-- Header -->
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+                <div>
+                    <h2 style="margin: 0 0 8px 0; font-size: 24px; font-weight: bold;">Review & Submit</h2>
+                    <p style="margin: 0; color: #6b7280;">Review your data before final submission</p>
+                </div>
+                <div style="display: flex; gap: 8px;">
+                    <span data-testid="ready-badge" class="badge badge-success">✓ Ready to Submit</span>
+                    <span data-testid="total-fields-badge" class="badge badge-outline">5 Fields Completed</span>
+                </div>
+            </div>
+            
+            <!-- Form Data -->
+            <div class="taskgroup-card" data-testid="taskgroup-card">
+                <div class="card-header" data-testid="card-header">
+                    <h3 style="margin: 0; font-size: 18px;">Basic Information</h3>
+                    <span data-testid="card-toggle">▼</span>
+                </div>
+                <div class="card-content" data-testid="card-content">
+                    <div class="field-row" data-testid="field-row">
+                        <div class="field-name" data-testid="field-name">
+                            Patient ID <span class="required">*</span>
+                        </div>
+                        <div class="field-value" data-testid="field-value">PT-001</div>
+                    </div>
+                    <div class="field-row" data-testid="field-row">
+                        <div class="field-name" data-testid="field-name">
+                            Patient Age <span class="required">*</span>
+                        </div>
+                        <div class="field-value" data-testid="field-value">35</div>
+                    </div>
+                    <div class="field-row" data-testid="field-row">
+                        <div class="field-name" data-testid="field-name">
+                            Consent Given <span class="required">*</span>
+                        </div>
+                        <div class="field-value" data-testid="field-value">
+                            <span class="badge badge-success">✓ Yes</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="taskgroup-card" data-testid="taskgroup-card">
+                <div class="card-header" data-testid="card-header">
+                    <h3 style="margin: 0; font-size: 18px;">Sample Collection</h3>
+                    <span data-testid="card-toggle">▼</span>
+                </div>
+                <div class="card-content" data-testid="card-content">
+                    <div class="field-row" data-testid="field-row">
+                        <div class="field-name" data-testid="field-name">
+                            Collection Date <span class="required">*</span>
+                        </div>
+                        <div class="field-value" data-testid="field-value">1/15/2025</div>
+                    </div>
+                    <div class="field-row" data-testid="field-row">
+                        <div class="field-name" data-testid="field-name">Sample Type</div>
+                        <div class="field-value" data-testid="field-value">
+                            <span class="badge badge-outline">blood</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Submit Section -->
+            <div style="display: flex; justify-content: flex-end; gap: 8px; padding-top: 24px; border-top: 1px solid #e5e7eb; margin-top: 24px;">
+                <button type="button" style="background: transparent; border: 1px solid #e5e7eb; padding: 8px 16px; border-radius: 4px; cursor: pointer;">
+                    Back to Form
+                </button>
+                <button class="submit-btn">
+                    <span data-testid="send-icon">📤</span>
+                    Submit ELN
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Add some basic interactivity for testing
+        document.querySelectorAll('[data-testid="card-toggle"]').forEach(toggle => {
+            toggle.addEventListener('click', function(e) {
+                e.stopPropagation();
+                const content = this.closest('.taskgroup-card').querySelector('[data-testid="card-content"]');
+                if (content.style.display === 'none') {
+                    content.style.display = 'block';
+                    this.textContent = '▼';
+                } else {
+                    content.style.display = 'none';
+                    this.textContent = '▶';
+                }
+            });
+        });
+        
+        // Click anywhere on card header to toggle
+        document.querySelectorAll('[data-testid="card-header"]').forEach(header => {
+            header.addEventListener('click', function() {
+                const toggle = this.querySelector('[data-testid="card-toggle"]');
+                toggle.click();
+            });
+        });
+    </script>
+</body>
+</html> 

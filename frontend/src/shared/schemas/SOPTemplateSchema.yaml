@@ -1,0 +1,1155 @@
+# SPDX-FileCopyrightText: 2024-2025 Pathway Bio, Inc. <https://pwbio.ai>
+# SPDX-FileContributor: Kimberly Robasky
+# SPDX-License-Identifier: Apache-2.0
+
+# Enhanced SOP Template Schema with Bioschemas, shadcn/ui, and Zod support
+# Version: 2.0
+# Compatible with: Bioschemas, shadcn/ui + Radix, Zod validation
+
+# Bioschemas context
+"@context": "https://schema.org"
+"@type": "SoftwareApplication"
+
+# Schema strictness - no additional properties allowed
+additionalProperties: false # This translates to Zod .strict()
+
+# Root SOP Template Properties
+id:
+  type: string
+  description: The unique identifier for the SOP template.
+  required: true
+
+name:
+  type: string
+  description: The name of the SOP template (short identifier).
+  required: true
+
+title:
+  type: string
+  description: The title of the SOP template.
+  required: true
+
+version:
+  type: string
+  description: The version of the SOP template.
+  required: true
+
+author:
+  type: string
+  description: The author of the SOP template.
+  required: true
+
+approver:
+  type: string
+  description: The approver of the SOP template.
+  required: true
+
+description:
+  type: string
+  description: The description of the SOP template.
+
+date-published:
+  type: string
+  format: date
+  description: The date the SOP template was published.
+  required: true
+
+date-deployed:
+  type: string
+  format: date
+  description: The date the SOP template was deployed.
+
+status:
+  type: string
+  description: The status of the SOP template.
+  enum: [draft, published, deprecated]
+  default: draft
+  required: true
+
+# Bioschemas required properties
+url:
+  type: string
+  format: uri
+  description: The URL of the SOP template
+  required: true
+
+license:
+  type: string
+  description: The license under which the SOP is distributed
+  required: true
+
+keywords:
+  type: array
+  items:
+    type: string
+  description: Keywords describing the SOP content
+  required: true
+
+applicationCategory:
+  type: string
+  description: The category of the SOP (e.g., "Laboratory Protocol", "Bioinformatics")
+  required: true
+
+bioschemas_type:
+  type: string
+  enum: [ComputationalTool, Dataset, TrainingMaterial, LabProtocol]
+  description: The specific Bioschemas type
+  default: LabProtocol
+
+conformsTo:
+  type: string
+  format: uri
+  description: URI of the Bioschemas profile this conforms to
+  default: "https://bioschemas.org/profiles/ComputationalTool/1.0-RELEASE"
+
+# Zod Generation Configuration
+zod_generation:
+  type: object
+  properties:
+    schema_name:
+      type: string
+      description: Name of the generated Zod schema
+    export_type:
+      type: string
+      enum: ["named", "default", "both"]
+      description: How to export the generated schema
+      default: "named"
+    strict_mode:
+      type: boolean
+      description: Whether to generate strict Zod schemas (.strict())
+      default: true
+    pass_through:
+      type: boolean
+      description: Whether to allow unknown keys (.passthrough())
+      default: false
+    catch_all:
+      type: boolean
+      description: Whether to catch all unknown keys (.catchall())
+      default: false
+    branded:
+      type: boolean
+      description: Whether to create branded types for this schema
+      default: false
+    description:
+      type: string
+      description: Description comment for the generated schema
+  required: [schema_name]
+
+# Schema Dependencies for Complex Validation
+schema_dependencies:
+  type: object
+  properties:
+    cross_field_validations:
+      type: array
+      items:
+        type: object
+        required: [name, fields, condition, error_message]
+        properties:
+          name:
+            type: string
+            description: Name of the cross-field validation
+          fields:
+            type: array
+            items:
+              type: string
+            description: Field IDs involved in the validation
+          condition:
+            type: string
+            description: JavaScript condition expression
+          error_message:
+            type: string
+            description: Error message when validation fails
+          error_path:
+            type: string
+            description: Which field should show the error
+      description: Validations that involve multiple fields
+    conditional_schemas:
+      type: array
+      items:
+        type: object
+        required: [discriminator_field, schemas]
+        properties:
+          discriminator_field:
+            type: string
+            description: Field that determines which schema to use
+          schemas:
+            type: object
+            additionalProperties:
+              type: object
+              description: Schema variants based on discriminator value
+      description: Different schema shapes based on field values
+
+
+requires:
+  description: The prerequisite SOP templates and their fields that this SOP template requires.
+  type: array
+  default: []
+  required: true
+  items:
+    $ref: '#/definitions/ImportedField'
+ 
+taskgroups:
+  description: The tasks of the SOP template.
+  type: array
+  default: []
+  required: true
+  items:
+    $ref: '#/definitions/TaskGroup'
+
+# Metadata for tracking
+metadata:
+  type: object
+  properties:
+    created_by:
+      type: string
+      description: User who created this SOP template
+      required: true
+    created_date:
+      type: string
+      format: date
+      description: When this SOP template was created
+      required: true
+    modified_by:
+      type: string
+      description: User who last modified this SOP template
+      required: true
+    modified_date:
+      type: string
+      format: date
+      description: When this SOP template was last modified
+      required: true
+    tags:
+      type: array
+      items:
+        type: string
+      description: Tags for categorizing this SOP template
+    sop_permissions:
+      type: object
+      description: Access control configuration for this SOP
+      $ref: '#/definitions/Authorization'
+      required: true
+    eln_default_permissions:
+      type: object
+      description: >
+        Default access control configuration for ELN's produced by this SOP.
+        Can be overridden by the ELN creator if allowed. 
+      $ref: '#/definitions/Authorization'
+      required: true
+    eln_creator_permission_overrides:
+      description: >
+        Whether the ELN creator can override the default access control configuration set by the SOP creator.
+        If in the list, the ELN creator can override that authorization.
+        If not in the list, the ELN creator cannot override that authorization.
+        If the list is empty, the ELN creator cannot override any authorization.
+        It is not recommended to allow the ELN creator to override any authorization, 
+        instead just make the SOP and ELN public.
+        ***Not implemented yet***
+        type: array
+          items:
+            type: string
+            enum: [public, allowed_users, allowed_groups, required_permissions]
+          uniqueItems: true
+          default: []
+      required: true
+
+
+definitions:
+  Authorization:
+    description: >
+      Access control configuration for this resource.
+      Default permissions are intentionally loose to allow all authenticated users
+      to create SOPs and access the ELN resources they produce.
+      This can be overridden by the sop_permissions and eln_default_permissions properties.
+    type: object
+    additionalProperties: false # This translates to Zod .strict()
+    properties:
+      public:
+        type: boolean
+        description: >
+          Whether this resource is publicly accessible.
+          If true, the rest of the access control configuration is ignored.
+          This is useful for SOPs that are used for public data, 
+          such as a public SOP for a public dataset, or for a published method.
+        default: false
+      allowed_users:
+        type: array
+        items:
+          type: string
+        description: >
+          Users that can access this resource, 
+          despite group membership and required permissions.
+        example: ["*:admin", "view:user1"]
+        default: []
+      allowed_groups:
+        type: array
+        items:
+          type: string
+        description: Groups that can access this resource
+        example: ["IT-SecOps", "admin"]
+        default: []
+      filename_variable_access:
+        type: array
+        items:
+          type: string
+        description: >
+          Complements allowed_groups by 
+          adding the values of these filename variables to the allowed_groups.
+          This is useful for ELNs that are created by a specific project or experiment.
+          If there is a group named for the value of the experiment_id,
+          then the users in that group can access the ELN.
+        example: ["project_id", "experiment_id"]
+        default: []
+      required_permissions:
+        type: array
+        items:
+          type: string
+        description: >
+          Specific permissions required to access this resource.
+          Permissions are hierarchical, using ':' as separator (e.g. 'submit:SOP').
+          Wildcards '*' can be used to match multiple permissions (e.g. 'submit:SOP*').
+          A user must have ALL listed permissions to access the resource.
+          Common patterns:
+          - If a user has 'view:SOP*' and 'submit:SOP*', 
+            they can view and submit any SOP, including this example
+          - If a user has 'view:SOP:IT-Security' and 'submit:SOP:IT-Security', 
+            they can view and submit any IT-Security SOP
+        example: ["view:SOP:IT-Security", "submit:SOP:IT-Security"]  # User needs both view and submit permissions for IT-Security SOPs
+        default: [] # default is empty, meaning no permissions are required
+        required: true
+
+
+
+
+  TaskGroup:
+    description: An ordered group of tasks (can be part of a procedure, or reagents list, etc.).
+    type: object
+    additionalProperties: false # This translates to Zod .strict()
+    required: [id, name, title, children]
+    properties:
+      id:
+        type: string
+        description: The unique identifier for the task group.
+      name:
+        type: string
+        description: The name of the task group (short name).
+      title:
+        type: string
+        description: The title of the task group.
+      parents:
+        type: array
+        items:
+          type: string
+        description: Array of container IDs where this task group appears
+      description:
+        type: string
+        description: Description of the task group.
+      ui_config:
+        $ref: '#/definitions/UIConfiguration'
+        description: UI configuration for task group rendering (shadcn/ui components)
+      children:
+        type: array
+        items:
+          anyOf:
+            - $ref: '#/definitions/TaskGroup'
+            - $ref: '#/definitions/Task'
+        description: A task group can contain other task groups or tasks.
+
+  Task:
+    description: A task in a task group.
+    type: object
+    additionalProperties: false # This translates to Zod .strict()
+    required: [id, name, title, description]
+    properties:
+      id:
+        type: string
+        description: The unique identifier for the task.
+      ordinal:
+        type: integer
+        description: The ordinal of the task in the task group.
+      name:
+        type: string
+        description: The name of the task (short name).
+      title:
+        type: string
+        description: The title of the task.
+      parents:
+        type: array
+        items:
+          type: string
+        description: Array of container IDs where this task appears
+      description:
+        type: string  
+        description: The description of the task.
+      ui_config:
+        $ref: '#/definitions/UIConfiguration'
+        description: UI rendering configuration for shadcn/ui components
+      children:
+        type: array
+        items:
+          anyOf:
+            - $ref: '#/definitions/Field'
+            - $ref: '#/definitions/ImportedField'
+            - $ref: '#/definitions/Table'
+        description: Fields, tables, and other data collected by this task
+
+
+  Field:
+    type: object
+    additionalProperties: false # This translates to Zod .strict()
+    required: [id, name, title, type]
+    properties:
+      id:
+        type: string
+        description: The unique identifier for the field.
+      name:
+        type: string
+        description: The name of the field (short name).
+      title:
+        type: string
+        description: The title of the field.
+      description:
+        type: string
+        description: The description of the field (used by SOP authors to give context to SOP executors).
+      parents:
+        type: array
+        items:
+          type: string
+        description: Array of container IDs (Task or Table) where this field appears (first = primary/editable location)
+      editable_in:
+        type: array
+        items:
+          type: string
+        description: Container IDs (Task or Table) where this field should be editable (defaults to readonly everywhere)
+        default: []
+      annotation:
+        type: string
+        description: The annotation of the field.
+      
+      # Enhanced type system for Zod mapping
+      type:
+        type: string
+        enum: [
+          "string", "number", "integer", "boolean", "date", "datetime",
+          "array", "object", "file", "integration", "enum", "union",
+          "literal", "optional", "nullable", "branded"
+        ]
+        description: The type of the field (maps directly to Zod types)
+        default: "string"
+      
+      required:
+        type: boolean
+        description: Whether the field is required to be filled in by the user.
+        default: false
+            
+      # Type-specific properties
+
+      # File-specific configuration (when type: "file")
+      file_config:
+        type: object
+        additionalProperties: false
+        properties:
+          accept:
+            type: string
+            description: Accepted file types (e.g., ".pdf,.doc,.txt")
+            default: "*/*"
+          multiple:
+            type: boolean
+            description: Whether multiple files can be uploaded
+            default: false
+          max_size_mb:
+            type: number
+            description: Maximum file size in MB
+            default: 10
+          max_files:
+            type: integer
+            description: Maximum number of files (when multiple=true)
+            default: 1
+          storage_path:
+            type: string
+            description: Custom storage path within ELN attachments
+            default: "attachments"
+          # New fields discovered during backend implementation:
+          form_data_structure:
+            type: object
+            description: Expected structure of form data for file fields
+            properties:
+              files:
+                type: array
+                description: Array of File objects from browser
+              fileIds:
+                type: array
+                description: Array of UUID strings returned from upload API
+                items:
+                  type: string
+              metadata:
+                type: object
+                description: File metadata for display and validation
+                properties:
+                  originalNames:
+                    type: array
+                    items:
+                      type: string
+                  sizes:
+                    type: array
+                    items:
+                      type: number
+                  types:
+                    type: array
+                    items:
+                      type: string
+
+      enum_values:
+        type: array
+        items:
+          type: string
+        description: Allowed values for enum type (maps to z.enum())
+      
+      union_types:
+        type: array
+        items:
+          type: string
+        description: Union type options (maps to z.union())
+      
+      literal_value:
+        type: string
+        description: Literal value (maps to z.literal())
+      
+      object_properties:
+        type: object
+        description: Properties for object type (maps to z.object())
+        additionalProperties:
+          $ref: '#/definitions/Field'
+      
+      array_item_type:
+        $ref: '#/definitions/Field'
+        description: Type definition for array items (maps to z.array())
+      
+      # Optional/nullable handling
+      optional:
+        type: boolean
+        description: Whether field is optional (maps to z.optional())
+        default: false
+      
+      nullable:
+        type: boolean
+        description: Whether field can be null (maps to z.nullable())
+        default: false
+      
+      # Default values for Zod
+      default_value:
+        description: Default value for the field (maps to z.default())
+      
+      # Zod-specific validation
+      validation:
+        type: object
+        additionalProperties: false # This translates to Zod .strict()
+        properties:
+          # String validations
+          min_length:
+            type: integer
+            description: Minimum string length (maps to z.string().min())
+          max_length:
+            type: integer
+            description: Maximum string length (maps to z.string().max())
+          pattern:
+            type: string
+            description: Regex pattern (maps to z.string().regex())
+          email:
+            type: boolean
+            description: Email validation (maps to z.string().email())
+            default: false
+          url:
+            type: boolean
+            description: URL validation (maps to z.string().url())
+            default: false
+          uuid:
+            type: boolean
+            description: UUID validation (maps to z.string().uuid())
+            default: false
+          
+          # Number validations
+          min_value:
+            type: number
+            description: Minimum numeric value (maps to z.number().min())
+          max_value:
+            type: number
+            description: Maximum numeric value (maps to z.number().max())
+          integer_only:
+            type: boolean
+            description: Integer validation (maps to z.number().int())
+            default: false
+          positive:
+            type: boolean
+            description: Positive number validation (maps to z.number().positive())
+            default: false
+          non_negative:
+            type: boolean
+            description: Non-negative validation (maps to z.number().nonnegative())
+            default: false
+          
+          # Array validations
+          min_items:
+            type: integer
+            description: Minimum array length (maps to z.array().min())
+          max_items:
+            type: integer
+            description: Maximum array length (maps to z.array().max())
+          unique_items:
+            type: boolean
+            description: Array uniqueness (maps to z.array().unique())
+            default: false
+          
+          # Date validations
+          min_date:
+            type: string
+            format: date
+            description: Minimum date (maps to z.date().min())
+          max_date:
+            type: string
+            format: date
+            description: Maximum date (maps to z.date().max())
+          
+          # File validations
+          file_type:
+            type: string
+            description: Required file type validation (maps to custom file type checking)
+          max_file_size_mb:
+            type: number
+            description: Maximum file size in MB (maps to file size validation)
+          min_file_size_mb:
+            type: number
+            description: Minimum file size in MB (maps to file size validation)
+          allowed_extensions:
+            type: array
+            items:
+              type: string
+            description: Allowed file extensions (maps to extension validation)
+          forbidden_extensions:
+            type: array
+            items:
+              type: string
+            description: Forbidden file extensions (maps to extension validation)
+          max_files:
+            type: integer
+            description: Maximum number of files (maps to array length validation)
+          min_files:
+            type: integer
+            description: Minimum number of files (maps to array length validation)
+
+          # Custom validations
+          custom_refinements:
+            type: array
+            items:
+              type: object
+              required: [name, condition, error_message]
+              properties:
+                name:
+                  type: string
+                  description: Name/identifier for the refinement
+                condition:
+                  type: string
+                  description: JavaScript condition expression
+                error_message:
+                  type: string
+                  description: Error message when refinement fails
+            description: Custom Zod refinements (maps to z.refine())
+          
+          # Transformation
+          transform:
+            type: object
+            required: [function_name]
+            properties:
+              function_name:
+                type: string
+                description: Name of transform function to apply
+              parameters:
+                type: object
+                description: Parameters for the transform function
+            description: Zod transform configuration (maps to z.transform())
+          
+          # UI-specific validation
+          debounce_ms:
+            type: integer
+            description: Debounce validation in milliseconds
+            default: 300
+        description: Validation rules for the field
+      
+      # Preprocessing
+      preprocess:
+        type: object
+        required: [function_name]
+        properties:
+          function_name:
+            type: string
+            description: Name of preprocess function
+          parameters:
+            type: object
+            description: Parameters for preprocessing
+        description: Zod preprocessing configuration (maps to z.preprocess())
+      
+      # shadcn/ui configuration
+      ui_config:
+        $ref: '#/definitions/UIConfiguration'
+        description: UI rendering configuration for shadcn/ui components
+
+      children:
+        type: array
+        items:
+          anyOf:
+            - $ref: '#/definitions/ELNFilenameComponent'
+            - $ref: '#/definitions/ExportConfiguration'
+        description: Export information, ELN filename component information
+
+  ExportConfiguration:
+    required: [id]
+    type: object
+    additionalProperties: false # This translates to Zod .strict()
+    properties:
+      id:
+        type: string
+        description: The unique identifier for the export configuration.
+      enabled:
+        type: boolean
+        description: Whether the field is exported from the SOP template
+        default: true
+      value_immutable:
+        type: boolean
+        description: Whether the field value is immutable in the exported SOP
+        default: true
+      default_immutable:
+        type: boolean
+        description: Whether the field's default value is immutable in the exported SOP
+        default: true
+
+  ELNFilenameComponent:
+    required: [id]
+    type: object
+    additionalProperties: false # This translates to Zod .strict()
+    properties:
+      id:
+        type: string
+        description: The unique identifier for the ELN filename component.
+      filename_component:
+        type: boolean
+        description: This is always true and just a convenience field to make it easier to identify ELN filename components.
+        default: true
+      order:
+        type: integer
+        description: The order of the component in the ELN filename
+        default: 0
+
+  ImportedField:
+    type: object
+    additionalProperties: false # This translates to Zod .strict()
+    required: [id, import_source, mutability]
+    properties:
+      id:
+        type: string
+        description: The unique identifier for the field.
+
+      exported:
+        $ref: '#/definitions/ExportConfiguration'
+        description: Export configuration
+
+      eln_filename_component:
+        $ref: '#/definitions/ELNFilenameComponent'
+        description: ELN filename component configuration
+
+      # Import source information
+      import_source:
+        type: object
+        properties:
+          sop_id:
+            type: string
+            description: The unique identifier for the SOP template that the field is imported from.
+          sop_version:
+            type: string
+            description: The version of the SOP template that the field is imported from. If not specified, the latest version is used.
+          sop_field_id:
+            type: string
+            description: The ID of the field to import from the source SOP template.
+
+      parents:
+        type: array
+        items:
+          type: string
+        description: Array of container IDs (TaskGroup or Table) where this imported field appears
+      editable_in:
+        type: array
+        items:
+          type: string
+        description: Container IDs (TaskGroup or Table) where this imported field should be editable (defaults to readonly everywhere)
+        default: []
+
+
+      # Mutability configuration
+      mutability:      
+        type: object
+        properties:
+          mutable:
+            type: boolean
+            description: Whether the imported field value is mutable by the user (RARE!) - if so, there must be a field defined to collect the value.
+            default: false
+          mutable_default:
+            type: boolean
+            description: Whether the imported field's default value is mutable. If so, there must be a field defined to collect the value.
+            default: false
+      
+      # Fallback field definition
+      field:
+        $ref: '#/definitions/Field'
+        description: A field can be defined to provide default values or collect data in the event this field is exported as mutable, imported as mutable, and no value was provided at the source.
+      
+      # Bioschemas compatibility
+      "@type":
+        type: string
+        description: The schema.org type for this input
+        default: "PropertyValue"
+      
+      bioschemas_name:
+        type: string
+        description: The schema.org name property (human-readable name)
+      
+      conformsTo:
+        type: array
+        items:
+          type: string
+          format: uri
+        description: URIs of the Bioschemas profiles this conforms to
+        default: ["https://bioschemas.org/profiles/ComputationalTool/1.0-RELEASE"]
+      
+      # ELN Resolution strategy
+      resolution_strategy:
+        type: object
+        properties:
+          resolver_priority:
+            type: integer
+            description: Priority when resolving conflicts (higher = higher priority)
+            default: 0
+          fallback_behavior:
+            type: string
+            enum: ["error", "skip", "use_default", "prompt_user"]
+            description: What to do if imported field cannot be resolved
+            default: "error"
+          cache_strategy:
+            type: string
+            enum: ["always", "never", "conditional"]
+            description: How to cache resolved values
+            default: "conditional"
+          validation_timing:
+            type: string
+            enum: ["import", "runtime", "both"]
+            description: When to validate imported field values
+            default: "both"
+        description: How this field should be resolved from the ELN
+
+      children:
+        type: array
+        items:
+          anyOf:
+            - $ref: '#/definitions/ELNFilenameComponent'
+            - $ref: '#/definitions/ExportConfiguration'
+        description: Export information, ELN filename component information
+
+  UIConfiguration:
+    type: object
+    additionalProperties: false # This translates to Zod .strict()
+    description: Configuration for rendering fields using shadcn/ui and Radix components
+    properties:
+      default_expanded:
+        type: boolean
+        description: If this is a card, whether the card is expanded by default
+        default: true
+      card_variant:
+        type: string
+        enum: ["default", "destructive", "outline", "secondary"]
+        description: Card variant for styling
+        default: "default"
+      collapsible:
+        type: boolean
+        description: If this is a card, whether the card can be collapsed
+        default: true
+      icon:
+        type: string
+        description: Lucide icon name for the task group
+
+
+      component_type:
+        type: string
+        enum: [
+          "input", "textarea", "select", "checkbox", "radio-group", 
+          "date-picker", "file-upload", "number-input", "password",
+          "combobox", "multi-select", "slider", "switch", "label"
+        ]
+        description: The shadcn/ui component to use
+        default: "input"
+      
+      variant:
+        type: string
+        enum: ["default", "destructive", "outline", "secondary", "ghost", "link"]
+        description: Component variant (for Button, Badge, etc.)
+        default: "default"
+      
+      size:
+        type: string
+        enum: ["sm", "md", "lg", "xl"]
+        description: Component size
+        default: "md"
+      
+      placeholder:
+        type: string
+        description: Placeholder text for input components
+      
+      label:
+        type: string
+        description: Label text (overrides field.title if provided)
+      
+      description:
+        type: string
+        description: Help text/description (overrides field.annotation if provided)
+      
+      # Radix-specific props
+      radix_props:
+        type: object
+        description: Additional props to pass to the underlying Radix component
+        additionalProperties: true
+      
+      # Validation UI
+      validation_ui:
+        type: object
+        properties:
+          show_validation_state:
+            type: boolean
+            default: true
+          error_message_position:
+            type: string
+            enum: ["below", "tooltip", "inline"]
+            default: "below"
+          required_indicator:
+            type: string
+            enum: ["asterisk", "text", "none"]
+            default: "asterisk"
+      
+      # Layout and styling
+      layout:
+        type: object
+        properties:
+          full_width:
+            type: boolean
+            default: false
+          grid_column_span:
+            type: integer
+            minimum: 1
+            maximum: 12
+            default: 1
+          className:
+            type: string
+            description: Additional CSS classes to apply
+          style:
+            type: object
+            description: Inline styles
+            additionalProperties: true
+      
+      # Select/Combobox specific
+      options:
+        type: array
+        items:
+          type: object
+          properties:
+            value:
+              type: string
+            label:
+              type: string
+            disabled:
+              type: boolean
+              default: false
+            description:
+              type: string
+        description: Options for select/combobox components
+      
+      # Date picker specific
+      date_config:
+        type: object
+        properties:
+          format:
+            type: string
+            default: "PP"
+          disable_past:
+            type: boolean
+            default: false
+          disable_future:
+            type: boolean
+            default: false
+          min_date:
+            type: string
+            format: date
+          max_date:
+            type: string
+            format: date
+      
+      # File upload specific
+      file_config:
+        type: object
+        additionalProperties: false
+        properties:
+          accept:
+            type: string
+            description: Accepted file types (overrides field.file_config.accept if provided)
+          multiple:
+            type: boolean
+            description: Whether multiple files can be uploaded (overrides field.file_config.multiple)
+          dropzone:
+            type: boolean
+            description: Enable drag & drop interface
+            default: true
+          preview:
+            type: boolean
+            description: Show file previews
+            default: true
+          progress:
+            type: boolean
+            description: Show upload progress
+            default: true
+          max_preview_size:
+            type: integer
+            description: Max file size for preview (bytes)
+            default: 5242880  # 5MB
+          show_file_list:
+            type: boolean
+            description: Show list of uploaded files
+            default: true
+          allow_remove:
+            type: boolean
+            description: Allow users to remove uploaded files
+            default: true
+          upload_button_text:
+            type: string
+            description: Custom text for upload button
+            default: "Choose Files"
+          dropzone_text:
+            type: string
+            description: Custom text for dropzone area
+            default: "Drag & drop files here, or click to select"
+        description: File upload UI configuration (overrides field.file_config when provided)
+
+      # Conditional rendering
+      conditional:
+        type: object
+        description: Optional conditions for when this field should appear/be enabled
+        properties:
+          conditions:
+            type: array
+            items:
+              type: object
+              properties:
+                field_path:
+                  type: string
+                  description: Path to the field to check (dot notation)
+                operator:
+                  type: string
+                  enum: ["equals", "not_equals", "in", "not_in", "greater", "less", "exists", "not_exists"]
+                value:
+                  description: Value to compare against
+                logic_operator:
+                  type: string
+                  enum: ["and", "or"]
+                  default: "and"
+            description: Conditions that must be met for field to be included
+          
+          zod_discriminated_union:
+            type: boolean
+            description: Whether to use Zod's discriminated union for this conditional
+            default: false
+
+  Table:
+    type: object
+    additionalProperties: false # This translates to Zod .strict()
+    required: [id, name, title]
+    properties:
+      id:
+        type: string
+        description: The unique identifier for the table.
+      name:
+        type: string
+        description: The name of the table (short name).
+      title:
+        type: string
+        description: The title of the table.
+      parents:
+        type: array
+        items:
+          type: string
+        description: Array of container IDs (Task or Table) where this table appears (first = primary/editable location)
+      editable_in:
+        type: array
+        items:
+          type: string
+        description: Container IDs (Task or Table) where this table should be editable (defaults to readonly everywhere)
+        default: []
+      annotation:
+        type: string
+        description: The annotation of the table.
+      transposed:
+        type: boolean
+        description: Whether the table should be rendered as transposed (fields as columns).
+        default: false
+      column_names:
+        type: array
+        description: The column index names of the table.
+        items:
+          type: string
+          description: The column index name (e.g., "A", "B", "C", etc.).
+        default: ['Column 1', 'Column 2', 'Column 3']
+      column_mutability:
+        type: string
+        enum: [immutable, mutable]
+        default: immutable
+        description: Whether the table columns are mutable (can add/remove columns).
+      column_name_mutability:
+        type: string
+        enum: [immutable, mutable]
+        default: immutable
+        description: Whether the table column names are mutable (can change column names).
+      row_mutability:
+        type: string
+        enum: [immutable, mutable]
+        default: mutable
+        description: Whether the table rows are mutable (can add/remove rows). Row names are immutable.
+      children:
+        type: array
+        description: >
+          The rows of the table; we have to call it children to be compatible with the relationship 
+          graph discovery logic. Here, we can mix owned fields and references to fields from other tasks
+        items:
+          anyOf:
+            - $ref: '#/definitions/Field'
+            - $ref: '#/definitions/ImportedField'
+      
+      # shadcn/ui table configuration
+      ui_config:
+        type: object
+        additionalProperties: false # This translates to Zod .strict()
+        properties:
+          component_type:
+            type: string
+            enum: ["data-table", "simple-table", "editable-table"]
+            default: "data-table"
+          pagination:
+            type: boolean
+            default: true
+          sorting:
+            type: boolean
+            default: true
+          filtering:
+            type: boolean
+            default: false
+          row_selection:
+            type: boolean
+            default: false
+          virtual_scrolling:
+            type: boolean
+            default: false
+          density:
+            type: string
+            enum: ["comfortable", "compact", "normal"]
+            default: "normal"

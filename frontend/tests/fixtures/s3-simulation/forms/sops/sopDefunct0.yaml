@@ -1,0 +1,118 @@
+# SPDX-FileCopyrightText: 2024-2025 Pathway Bio, Inc. <https://pwbio.ai>
+# SPDX-FileContributor: Kimberly Robasky
+# SPDX-License-Identifier: Apache-2.0
+
+'@context': https://schema.org
+'@type': SoftwareApplication
+id: 'Defunct0'
+name: ''
+title: ''
+version: ''
+author: ''
+approver: ''
+date-published: ''
+url: ''
+license: ''
+keywords: []
+applicationCategory: ''
+requires: []
+exported_fields: []
+taskgroups:
+  - id: taskgroup_1752199335439
+    _schemaType: TaskGroup
+    children:
+      - id: taskgroup_1752199684392
+        _schemaType: TaskGroup
+        children:
+          - id: task_1752199708987
+            _schemaType: Task
+            children:
+              - id: table_1752199724739
+                _schemaType: Table
+                children: []
+                parent:
+                  - task_1752199708987
+                title: 96 Well Plate
+                column_mutability: mutable
+                column_name_mutability: mutable
+                row_mutability: immutable
+                ui_config:
+                  component_type: editable-table
+                  density: compact
+                  row_selection: true
+                  filtering: true
+            parent:
+              - taskgroup_1752199684392
+            name: Well plate design
+        parent:
+          - taskgroup_1752199335439
+        title: Design
+      - id: taskgroup_1752199339552
+        _schemaType: TaskGroup
+        children:
+          - id: taskgroup_1752199486149
+            _schemaType: TaskGroup
+            children:
+              - id: task_1752199541094
+                _schemaType: Task
+                children: []
+                parent:
+                  - taskgroup_1752199486149
+                name: pipette
+              - id: task_1752199557682
+                _schemaType: Task
+                children: []
+                parent:
+                  - taskgroup_1752199486149
+                name: 96 well plate
+            parent:
+              - taskgroup_1752199339552
+            title: Materials
+          - id: taskgroup_1752199497175
+            _schemaType: TaskGroup
+            children:
+              - id: task_1752199606693
+                _schemaType: Task
+                children: []
+                parent:
+                  - taskgroup_1752199497175
+                name: Microscope
+            parent:
+              - taskgroup_1752199339552
+            title: Equipment
+          - id: taskgroup_1752199505592
+            _schemaType: TaskGroup
+            children: []
+            parent:
+              - taskgroup_1752199339552
+            title: Procedures
+        parent:
+          - taskgroup_1752199335439
+        title: M&E
+      - id: taskgroup_1752199367994
+        _schemaType: TaskGroup
+        children:
+          - id: task_1752199378465
+            _schemaType: Task
+            children: []
+            parent:
+              - taskgroup_1752199367994
+            name: Step 1
+          - id: task_1752199431147
+            _schemaType: Task
+            children: []
+            parent:
+              - taskgroup_1752199367994
+            name: Step 2
+          - id: task_1752199403224
+            _schemaType: Task
+            children: []
+            parent:
+              - taskgroup_1752199367994
+            name: Step 3
+        parent:
+          - taskgroup_1752199335439
+        title: Procedures
+    title: Umbrella
+metadata:
+  tags: ''

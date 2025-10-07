@@ -1,0 +1,22 @@
+{
+  "name": "sopTest1 Partial Scenario",
+  "description": "Partial form data for sopTest1.yaml with some required fields missing",
+  "sop_id": "Test1",
+  "eln_data": {
+    "values": {
+      "ProjectId": "P1",
+      "field_1752432513644": "2025-01-15"
+    },
+    "metadata": {
+      "sop_id": "Test1",
+      "user_id": "test_user",
+      "timestamp": "2025-01-15T10:30:00Z",
+      "completion_percentage": 60
+    }
+  },
+  "expected_validation": {
+    "isValid": false,
+    "missingRequiredFields": ["PatientId"],
+    "totalFields": 2
+  }
+} 

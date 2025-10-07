@@ -1,0 +1,591 @@
+# SPDX-FileCopyrightText: 2024-2025 Pathway Bio, Inc. <https://pwbio.ai>
+# SPDX-FileContributor: Kimberly Robasky
+# SPDX-License-Identifier: Apache-2.0
+
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  Rawscribe - lambda backend for scribing raw data from SYNDI
+  SAM Template for FastAPI backend with pydantic support
+
+# Global configuration
+Globals:
+  Function:
+    Timeout: 30
+    MemorySize: 512
+    Runtime: python3.9
+    Architectures:
+      - x86_64
+    Environment:
+      Variables:
+        ENV: !Ref Environment # if removed, it would need to be added to every Lambda function definition
+        # PYTHONPATH: /var/runtime:/var/task # if added in, /opt/python would need to be added to the sys.path
+
+Parameters:
+  Environment:
+    Type: String
+    Default: stage
+    AllowedValues:
+      - dev
+      - test
+      - stage
+      - prod
+    Description: Environment name (dev/test/stage/prod)
+  
+  Organization:
+    Type: String
+    Description: Organization identifier (required - no default for security)
+    
+  EnableAuth:
+    Type: String
+    Default: 'false'
+    AllowedValues:
+      - 'true'
+      - 'false'
+    Description: Enable Cognito authentication (disabled for testing)
+  
+  DomainName:
+    Type: String
+    Default: ''
+    Description: Optional custom domain name for CloudFront distribution
+    
+  CognitoUserPoolId:
+    Type: String
+    Default: ''
+    Description: Existing Cognito User Pool ID (leave empty to create new)
+    
+  CognitoClientId:
+    Type: String
+    Default: ''
+    Description: Existing Cognito Client ID (leave empty to create new)
+    
+  CreateBuckets:
+    Type: String
+    Default: 'true'
+    AllowedValues:
+      - 'true'
+      - 'false'
+    Description: Create S3 buckets (false if they already exist)
+
+Conditions:
+  CreateAuth: !Equals [!Ref EnableAuth, 'true']
+  UseCustomDomain: !Not [!Equals [!Ref DomainName, '']]
+  CreateUserPool: !And
+    - !Condition CreateAuth
+    - !Equals [!Ref CognitoUserPoolId, '']
+  UseExistingUserPool: !And
+    - !Condition CreateAuth
+    - !Not [!Equals [!Ref CognitoUserPoolId, '']]
+  IsProd: !Equals [!Ref Environment, 'prod']
+  ShouldCreateBuckets: !Equals [!Ref CreateBuckets, 'true']
+
+Resources:
+  ##########################
+  # S3 Buckets - Already exist from previous deployment
+  ##########################
+  # Note: These buckets already exist and will be referenced by name:
+  # - rawscribe-lambda-stage-pwb-288761742376
+  # - rawscribe-forms-stage-pwb-288761742376
+  # - rawscribe-eln-stage-pwb-288761742376
+  # - rawscribe-eln-drafts-stage-pwb-288761742376
+
+  # Frontend hosting bucket
+  FrontendBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub 'syndi-frontend-${Environment}-${Organization}-${AWS::AccountId}'
+      WebsiteConfiguration:
+        IndexDocument: index.html
+        ErrorDocument: error.html
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: false
+        BlockPublicPolicy: false
+        IgnorePublicAcls: false
+        RestrictPublicBuckets: false
+
+  FrontendBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref FrontendBucket
+      PolicyDocument:
+        Statement:
+          - Sid: PublicReadForWebsite
+            Effect: Allow
+            Principal:
+              Service: cloudfront.amazonaws.com
+            Action: 
+              - s3:GetObject
+            Resource: !Sub '${FrontendBucket.Arn}/*'
+            Condition:
+              StringEquals:
+                AWS:SourceArn: !Sub 'arn:aws:cloudfront::${AWS::AccountId}:distribution/${CloudFrontDistribution}'
+
+  # Application S3 buckets (created only when CREATE_BUCKETS=true)
+  LambdaBucket:
+    Type: AWS::S3::Bucket
+    Condition: ShouldCreateBuckets
+    Properties:
+      BucketName: !Sub 'rawscribe-lambda-${Environment}-${Organization}-${AWS::AccountId}'
+
+  FormsBucket:
+    Type: AWS::S3::Bucket
+    Condition: ShouldCreateBuckets
+    Properties:
+      BucketName: !Sub 'rawscribe-forms-${Environment}-${Organization}-${AWS::AccountId}'
+
+  ELNBucket:
+    Type: AWS::S3::Bucket
+    Condition: ShouldCreateBuckets
+    Properties:
+      BucketName: !Sub 'rawscribe-eln-${Environment}-${Organization}-${AWS::AccountId}'
+
+  DraftsBucket:
+    Type: AWS::S3::Bucket
+    Condition: ShouldCreateBuckets
+    Properties:
+      BucketName: !Sub 'rawscribe-eln-drafts-${Environment}-${Organization}-${AWS::AccountId}'
+
+  ##########################
+  # IAM Roles
+  ##########################
+  
+  LambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub 'rawscribe-${Environment}-${Organization}-lambda-role'
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: S3AccessPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:PutObject
+                  - s3:DeleteObject
+                  - s3:ListBucket
+                Resource:
+                  - !Sub 'arn:aws:s3:::rawscribe-lambda-${Environment}-${Organization}-${AWS::AccountId}'
+                  - !Sub 'arn:aws:s3:::rawscribe-lambda-${Environment}-${Organization}-${AWS::AccountId}/*'
+                  - !Sub 'arn:aws:s3:::rawscribe-forms-${Environment}-${Organization}-${AWS::AccountId}'
+                  - !Sub 'arn:aws:s3:::rawscribe-forms-${Environment}-${Organization}-${AWS::AccountId}/*'
+                  - !Sub 'arn:aws:s3:::rawscribe-eln-${Environment}-${Organization}-${AWS::AccountId}'
+                  - !Sub 'arn:aws:s3:::rawscribe-eln-${Environment}-${Organization}-${AWS::AccountId}/*'
+                  - !Sub 'arn:aws:s3:::rawscribe-eln-drafts-${Environment}-${Organization}-${AWS::AccountId}'
+                  - !Sub 'arn:aws:s3:::rawscribe-eln-drafts-${Environment}-${Organization}-${AWS::AccountId}/*'
+        - PolicyName: CognitoAccessPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  # Read permissions
+                  - cognito-idp:AdminGetUser
+                  - cognito-idp:AdminListGroupsForUser
+                  - cognito-idp:ListUsers
+                  - cognito-idp:ListGroups
+                  - cognito-idp:GetUser
+                  # Write permissions for user management - ADMINS or LAB_MANAGERS - could be broken into a separate lambda
+                  - cognito-idp:AdminCreateUser
+                  - cognito-idp:AdminSetUserPassword
+                  - cognito-idp:AdminAddUserToGroup
+                  - cognito-idp:AdminRemoveUserFromGroup
+                  - cognito-idp:AdminDeleteUser
+                  - cognito-idp:AdminUpdateUserAttributes
+                Resource: !If
+                  - CreateUserPool
+                  - !GetAtt CognitoUserPool.Arn
+                  - !Sub 'arn:aws:cognito-idp:${AWS::Region}:${AWS::AccountId}:userpool/${CognitoUserPoolId}'
+
+  ##########################
+  # Lambda Function
+  ##########################
+  
+# Add layer resource for speedier builds
+  DependencyLayer:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      LayerName: !Sub 'rawscribe-deps-${Environment}-${Organization}'
+      ContentUri: backend/layers/dependencies
+      CompatibleRuntimes:
+        - python3.9
+      CompatibleArchitectures:
+        - x86_64
+      RetentionPolicy: Delete
+    Metadata:
+      BuildMethod: python3.9 # Tells SAM to auto-build
+      BuildArchitecture: x86_64
+
+
+  RawscribeLambda:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub 'rawscribe-${Environment}-${Organization}-backend'
+      CodeUri: backend/.build/src
+      Handler: rawscribe.main.handler
+      Layers:
+        - !Ref DependencyLayer
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Environment:
+        Variables:
+          ENV: !Ref Environment
+          ORG: !Ref Organization
+          CONFIG_S3_BUCKET: !Sub 'rawscribe-lambda-${Environment}-${Organization}-${AWS::AccountId}'
+          CONFIG_S3_KEY: config.json
+          COGNITO_REGION: !Ref AWS::Region
+          COGNITO_USER_POOL_ID: !If
+            - CreateUserPool
+            - !Ref CognitoUserPool
+            - !If
+              - UseExistingUserPool
+              - !Ref CognitoUserPoolId
+              - ''
+          COGNITO_CLIENT_ID: !If
+            - CreateUserPool
+            - !Ref CognitoUserPoolClient
+            - !If
+              - UseExistingUserPool
+              - !Ref CognitoClientId
+              - ''
+          FORMS_BUCKET: !Sub 'rawscribe-forms-${Environment}-${Organization}-${AWS::AccountId}'
+          ELN_BUCKET: !Sub 'rawscribe-eln-${Environment}-${Organization}-${AWS::AccountId}'
+          DRAFTS_BUCKET: !Sub 'rawscribe-eln-drafts-${Environment}-${Organization}-${AWS::AccountId}'
+      Events:
+        RootGet:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGateway
+            Path: /
+            Method: GET
+        HealthGet:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGateway
+            Path: /health
+            Method: GET
+        RuntimeConfigGet:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGateway
+            Path: /api/config/runtime
+            Method: GET
+        ApiProxy:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGateway
+            Path: /api/{proxy+}
+            Method: ANY
+            Auth:
+              Authorizer: CognitoAuthorizer
+              AuthorizationScopes: []
+        ApiV1Proxy:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGateway
+            Path: /api/v1/{proxy+}
+            Method: ANY
+            Auth:
+              Authorizer: CognitoAuthorizer
+              AuthorizationScopes: []
+
+  ##########################
+  # API Gateway
+  ##########################
+  
+  ApiGateway:
+    Type: AWS::Serverless::Api
+    Properties:
+      Name: !Sub 'rawscribe-${Environment}-${Organization}-api'
+      StageName: !Ref Environment
+      TracingEnabled: !If [IsProd, true, false]
+      # CRITICAL: Configure binary media types for file uploads
+      # Without this, API Gateway treats binary data as text and corrupts it
+      BinaryMediaTypes:
+        - 'multipart/form-data'
+        - 'image/*'
+        - 'application/pdf'
+        - 'application/vnd.ms-excel'
+        - 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        - 'application/octet-stream'
+      Cors:
+        AllowOrigin: "'*'"
+        AllowHeaders: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+        AllowMethods: "'GET,POST,PUT,DELETE,OPTIONS'"
+      # Conditionally add authorizer when auth is enabled
+      Auth:
+        Authorizers:
+          CognitoAuthorizer:
+            UserPoolArn: !If
+              - CreateUserPool
+              - !GetAtt CognitoUserPool.Arn
+              - !If
+                - UseExistingUserPool
+                - !Sub 'arn:aws:cognito-idp:${AWS::Region}:${AWS::AccountId}:userpool/${CognitoUserPoolId}'
+                - !Ref AWS::NoValue
+      MethodSettings:
+        - ResourcePath: '/*'
+          HttpMethod: '*'
+          LoggingLevel: !If [IsProd, ERROR, INFO]
+          DataTraceEnabled: !If [IsProd, false, true]
+          MetricsEnabled: true
+          ThrottlingRateLimit: 100
+          ThrottlingBurstLimit: 50
+
+  ##########################
+  # Cognito (Disabled by Default)
+  ##########################
+  
+  CognitoUserPool:
+    Type: AWS::Cognito::UserPool
+    Condition: CreateUserPool
+    Properties:
+      UserPoolName: !Sub 'rawscribe-${Environment}-${Organization}-userpool'
+      UsernameAttributes:
+        - email
+      AutoVerifiedAttributes:
+        - email
+      Policies:
+        PasswordPolicy:
+          MinimumLength: 8
+          RequireUppercase: true
+          RequireLowercase: true
+          RequireNumbers: true
+          RequireSymbols: true
+      Schema:
+        - Name: email
+          AttributeDataType: String
+          Required: true
+          Mutable: false
+        - Name: name
+          AttributeDataType: String
+          Required: false
+          Mutable: true
+
+  CognitoUserPoolClient:
+    Type: AWS::Cognito::UserPoolClient
+    Condition: CreateUserPool
+    Properties:
+      ClientName: !Sub 'rawscribe-${Environment}-${Organization}-client'
+      UserPoolId: !Ref CognitoUserPool
+      GenerateSecret: false
+      ExplicitAuthFlows:
+        - ALLOW_USER_PASSWORD_AUTH
+        - ALLOW_REFRESH_TOKEN_AUTH
+        - ALLOW_ADMIN_USER_PASSWORD_AUTH
+      PreventUserExistenceErrors: ENABLED
+
+  CognitoAdminGroup:
+    Type: AWS::Cognito::UserPoolGroup
+    Condition: CreateUserPool
+    Properties:
+      GroupName: ADMINS
+      UserPoolId: !Ref CognitoUserPool
+      Description: Administrative users with full access
+      Precedence: 1
+
+  CognitoLabManagerGroup:
+    Type: AWS::Cognito::UserPoolGroup
+    Condition: CreateUserPool
+    Properties:
+      GroupName: LAB_MANAGERS
+      UserPoolId: !Ref CognitoUserPool
+      Description: Lab managers with oversight and approval permissions
+      Precedence: 2
+
+  CognitoResearcherGroup:
+    Type: AWS::Cognito::UserPoolGroup
+    Condition: CreateUserPool
+    Properties:
+      GroupName: RESEARCHERS
+      UserPoolId: !Ref CognitoUserPool
+      Description: Researchers who can submit SOPs and manage drafts
+      Precedence: 3
+
+  CognitoClinicianGroup:
+    Type: AWS::Cognito::UserPoolGroup
+    Condition: CreateUserPool
+    Properties:
+      GroupName: CLINICIANS
+      UserPoolId: !Ref CognitoUserPool
+      Description: Clinical staff with data entry and viewing permissions
+      Precedence: 4
+
+  ##########################
+  # CloudFront Distribution
+  ##########################
+  
+  CloudFrontOriginAccessControl:
+    Type: AWS::CloudFront::OriginAccessControl
+    Properties:
+      OriginAccessControlConfig:
+        Name: !Sub 'rawscribe-${Environment}-${Organization}-oac'
+        OriginAccessControlOriginType: s3
+        SigningBehavior: always
+        SigningProtocol: sigv4
+
+  CloudFrontDistribution:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Comment: !Sub 'CLAIRE Frontend - ${Environment} - ${Organization}'
+        Enabled: true
+        DefaultRootObject: index.html
+        Origins:
+          # S3 Origin for frontend static files
+          - Id: S3Origin
+            DomainName: !GetAtt FrontendBucket.RegionalDomainName
+            S3OriginConfig:
+              OriginAccessIdentity: ''
+            OriginAccessControlId: !Ref CloudFrontOriginAccessControl
+          # API Gateway Origin
+          - Id: APIOrigin
+            DomainName: !Sub '${ApiGateway}.execute-api.${AWS::Region}.amazonaws.com'
+            OriginPath: !Sub '/${Environment}'
+            CustomOriginConfig:
+              HTTPPort: 80
+              HTTPSPort: 443
+              OriginProtocolPolicy: https-only
+        DefaultCacheBehavior:
+          TargetOriginId: S3Origin
+          ViewerProtocolPolicy: redirect-to-https
+          AllowedMethods:
+            - GET
+            - HEAD
+            - OPTIONS
+          CachedMethods:
+            - GET
+            - HEAD
+            - OPTIONS
+          Compress: true
+          CachePolicyId: 658327ea-f89d-4fab-a63d-7e88639e58f6  # Managed-CachingOptimized
+        CacheBehaviors:
+          # API routes
+          - PathPattern: /api/*
+            TargetOriginId: APIOrigin
+            ViewerProtocolPolicy: redirect-to-https
+            AllowedMethods:
+              - GET
+              - HEAD
+              - OPTIONS
+              - PUT
+              - POST
+              - PATCH
+              - DELETE
+            CachePolicyId: 4135ea2d-6df8-44a3-9df3-4b5a84be39ad  # Managed-CachingDisabled
+            OriginRequestPolicyId: 88a5eaf4-2fd4-4709-b370-b4c650ea3fcf  # Managed-CORS-S3Origin
+          # Health check
+          - PathPattern: /health
+            TargetOriginId: APIOrigin
+            ViewerProtocolPolicy: redirect-to-https
+            AllowedMethods:
+              - GET
+              - HEAD
+            CachePolicyId: 4135ea2d-6df8-44a3-9df3-4b5a84be39ad  # Managed-CachingDisabled
+        CustomErrorResponses:
+          - ErrorCode: 404
+            ResponseCode: 200
+            ResponsePagePath: /index.html
+            ErrorCachingMinTTL: 300
+          - ErrorCode: 403
+            ResponseCode: 200
+            ResponsePagePath: /index.html
+            ErrorCachingMinTTL: 300
+        PriceClass: PriceClass_100
+        ViewerCertificate:
+          CloudFrontDefaultCertificate: !If [UseCustomDomain, false, true]
+
+##########################
+# Outputs
+##########################
+
+Outputs:
+  ApiGatewayId:
+    Description: "API Gateway ID"
+    Value: !Ref ApiGateway
+
+  ApiEndpoint:
+    Description: API Gateway endpoint URL
+    Value: !Sub 'https://${ApiGateway}.execute-api.${AWS::Region}.amazonaws.com/${Environment}'
+    Export:
+      Name: !Sub '${AWS::StackName}-ApiEndpoint'
+
+  CloudFrontURL:
+    Description: CloudFront distribution URL for frontend
+    Value: !Sub 'https://${CloudFrontDistribution.DomainName}'
+    Export:
+      Name: !Sub '${AWS::StackName}-CloudFrontURL'
+
+  LambdaFunctionArn:
+    Description: Lambda function ARN
+    Value: !GetAtt RawscribeLambda.Arn
+    Export:
+      Name: !Sub '${AWS::StackName}-LambdaArn'
+
+  RSLambdaFunctionName:
+    Description: Rawscribe Lambda function name
+    Value: !Ref RawscribeLambda
+    Export:
+      Name: !Sub '${AWS::StackName}-RSLambdaFunctionName'
+
+  FrontendBucketName:
+    Description: WebApp S3 bucket name for frontend hosting on cloudfront
+    Value: !Sub 'syndi-frontend-${Environment}-${Organization}-${AWS::AccountId}'
+    Export:
+      Name: !Sub '${AWS::StackName}-FrontendBucket'
+
+  LambdaBucketName:
+    Description: Lambda S3 bucket name for config uploads
+    Value: !Sub 'rawscribe-lambda-${Environment}-${Organization}-${AWS::AccountId}'
+    Export:
+      Name: !Sub '${AWS::StackName}-LambdaBucket'
+
+  FormsBucketName:
+    Description: Forms S3 bucket name
+    Value: !Sub 'rawscribe-forms-${Environment}-${Organization}-${AWS::AccountId}'
+    Export:
+      Name: !Sub '${AWS::StackName}-FormsBucket'
+
+  ELNBucketName:
+    Description: ELN S3 bucket name
+    Value: !Sub 'rawscribe-eln-${Environment}-${Organization}-${AWS::AccountId}'
+    Export:
+      Name: !Sub '${AWS::StackName}-ELNBucket'
+
+  DraftsBucketName:
+    Description: Drafts S3 bucket name
+    Value: !Sub 'rawscribe-eln-drafts-${Environment}-${Organization}-${AWS::AccountId}'
+    Export:
+      Name: !Sub '${AWS::StackName}-DraftsBucket'
+
+  CognitoUserPoolId:
+    Description: Cognito User Pool ID (freshlycreated or existing)
+    Value: !If
+      - CreateUserPool
+      - !Ref CognitoUserPool
+      - !If
+        - UseExistingUserPool
+        - !Ref CognitoUserPoolId
+        - ''
+    Export:
+      Name: !Sub '${AWS::StackName}-UserPoolId'
+
+  CognitoClientId:
+    Description: Cognito Client ID (created or existing)
+    Value: !If
+      - CreateUserPool
+      - !Ref CognitoUserPoolClient
+      - !If
+        - UseExistingUserPool
+        - !Ref CognitoClientId
+        - ''
+    Export:
+      Name: !Sub '${AWS::StackName}-ClientId'

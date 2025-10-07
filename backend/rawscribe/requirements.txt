@@ -1,0 +1,16 @@
+# Minimal Lambda dependencies - use compatible versions
+fastapi>=0.116.1
+mangum>=0.19.0
+pydantic[email]>=2.11.7
+# pydantic-settings not needed for pydantic 1.x - included in main package
+boto3>=1.39.9
+pyjwt>=2.10.1
+cryptography>=43.0.0
+passlib[bcrypt]>=1.7.4
+python-multipart>=0.0.20
+python-magic>=0.4.27
+pyyaml>=6.0.2
+httpx>=0.28.1
+requests>=2.32.3
+structlog>=23.2.0
+python-dateutil>=2.9.0

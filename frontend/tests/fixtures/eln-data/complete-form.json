@@ -1,0 +1,25 @@
+{
+  "values": {
+    "patient_id": "PT-001",
+    "patient_age": 35,
+    "consent_given": true,
+    "collection_date": "2025-01-15",
+    "sample_type": "blood",
+    "sample_notes": ["Sample collected in morning", "Patient was fasting", "No complications"],
+    "string_field": "Test string value",
+    "number_field": 123.45,
+    "integer_field": 42,
+    "boolean_field": true,
+    "date_field": "2025-01-15",
+    "datetime_field": "2025-01-15T10:30:00Z",
+    "enum_field": "option2",
+    "array_field": ["value1", "value2", "value3"],
+    "single_field": "Single value for minimal SOP"
+  },
+  "metadata": {
+    "sop_id": "basic-sop-fixture",
+    "user_id": "test_user",
+    "timestamp": "2025-01-15T10:30:00Z",
+    "completion_percentage": 100
+  }
+} 

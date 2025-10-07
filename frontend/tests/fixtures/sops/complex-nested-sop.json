@@ -1,0 +1,70 @@
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "id": "complex-nested-sop",
+  "name": "Complex Nested SOP",
+  "title": "Complex procedure with deep nesting",
+  "version": "1.0",
+  "author": "test_author",
+  "approver": "test_approver", 
+  "date-published": "2025-01-15",
+  "status": "published",
+  "url": "https://example.com/sops/complex-nested-sop",
+  "license": "MIT",
+  "keywords": ["testing", "complex", "nested"],
+  "applicationCategory": "Laboratory",
+  "exported_fields": [],
+  "requires": [],
+  "metadata": {
+    "complexity": "high",
+    "nesting_levels": 3
+  },
+  "taskgroups": [
+    {
+      "id": "complex_taskgroup",
+      "name": "Complex Taskgroup",
+      "title": "Complex multi-level procedures",
+      "ui_config": {
+        "icon": "layers"
+      },
+      "children": [
+        {
+          "id": "level1_task",
+          "name": "Level 1 Task",
+          "title": "First level container",
+          "ui_config": {
+            "icon": "folder"
+          },
+          "children": [
+            {
+              "id": "level2_container", 
+              "name": "Level 2 Container",
+              "title": "Second level container",
+              "ui_config": {
+                "icon": "folder-open"
+              },
+              "children": [
+                {
+                  "id": "deep_field",
+                  "name": "Deep Field",
+                  "title": "Deeply nested field",
+                  "type": "string",
+                  "required": true,
+                  "description": "A field nested three levels deep"
+                },
+                {
+                  "id": "another_deep_field",
+                  "name": "Another Deep Field", 
+                  "title": "Another deeply nested field",
+                  "type": "number",
+                  "required": false,
+                  "description": "A second field at the same deep level"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+} 
