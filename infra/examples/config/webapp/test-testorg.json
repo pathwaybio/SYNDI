@@ -1,0 +1,38 @@
+{
+  "webapp": {
+    "auth": {
+      "required": false,
+      "jwt": {
+        "users": [
+          {
+            "id": "test_admin",
+            "email": "testadmin@example.com",
+            "username": "testadmin@example.com",
+            "password": "TestAdmin123!",
+            "name": "Test Admin",
+            "groups": ["ADMINS"],
+            "isAdmin": true
+          },
+          {
+            "id": "test_researcher",
+            "email": "testresearcher@example.com",
+            "username": "testresearcher@example.com",
+            "password": "TestResearch123!",
+            "name": "Test Researcher",
+            "groups": ["RESEARCHERS"],
+            "isAdmin": false
+          },
+          {
+            "id": "test_clinician",
+            "email": "testclinician@example.com",
+            "username": "testclinician@example.com",
+            "password": "TestClinic123!",
+            "name": "Test Clinician",
+            "groups": ["CLINICIANS"],
+            "isAdmin": false
+          }
+        ]
+      }
+    }
+  }
+}

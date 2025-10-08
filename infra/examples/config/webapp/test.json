@@ -1,0 +1,62 @@
+{
+  "webapp": {
+    "apiEndpoint": "http://localhost:8000/api",
+    "frontendUrl": "http://localhost:3000",
+    "auth": {
+      "required": true,
+      "provider": "jwt",
+      "jwt": {
+        "secret": "your-secret",
+        "algorithm": "HS256",
+        "baseUrl": "/api/auth",
+        "loginEndpoint": "/api/auth/login",
+        "signupEndpoint": "/api/auth/signup",
+        "refreshEndpoint": "/api/auth/refresh"
+      },
+      "session": {
+        "timeout": 86400000,
+        "refreshBuffer": 3600000
+      }
+    },
+    "autosave": {
+      "enabled": false,
+      "storage": {
+        "type": "localStorage",
+        "keyPrefix": "autosave-test",
+        "maxItems": 10,
+        "ttl": 3600000
+      },
+      "debounce": {
+        "delay": 5000,
+        "maxWait": 30000
+      },
+      "retry": {
+        "maxRetries": 1,
+        "backoffMultiplier": 1,
+        "initialDelay": 100
+      },
+      "ui": {
+        "showStatus": false,
+        "statusPosition": "bottom-right",
+        "toastOnSave": false,
+        "toastOnError": false
+      }
+    },
+    "claire": {
+      "autosave": {
+        "storage": {
+          "type": "api",
+          "apiEndpoint": "http://localhost:8000/api/v1",
+          "keyPrefix": "claire-autosave"
+        }
+      }
+    },
+    "server": {
+      "host": "localhost",
+      "port": 3000
+    },
+    "api": {
+      "proxyTarget": "http://localhost:8000"
+    }
+  }
+} 

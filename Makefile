@@ -353,12 +353,12 @@ list-envs:
 
 schemas:
 	@echo "Generating TypeScript schemas..."
-	npx tsx frontend/tools/generateSOPTemplateSchema.ts
+	npx --yes tsx frontend/tools/generateSOPTemplateSchema.ts
 
 schemas-validate-sop:
 	@$(MAKE) schemas
 	@echo "Validating SOP $(SOP_ID) against schema template..."
-	npx tsx frontend/tools/validateSOPAgainstTemplate.ts frontend/src/shared/schemas/SOPTemplateSchema.yaml .local/s3/forms/sops/sop$(SOP_ID).yaml
+	npx --yes tsx frontend/tools/validateSOPAgainstTemplate.ts frontend/src/shared/schemas/SOPTemplateSchema.yaml .local/s3/forms/sops/sop$(SOP_ID).yaml
 
 docs:
 	@echo "Building documentation..."
@@ -643,12 +643,25 @@ stop-all:
 
 test-frontend:
 	@echo "Running frontend tests (ORG=$(if $(ORG),$(ORG),$(TEST_ORG)))..."
-	@$(MAKE) config ENV=test ORG=$(if $(ORG),$(ORG),$(TEST_ORG))
-	cd frontend && npx vitest run
+	@if [ ! -d "infra/.config" ]; then \
+		ln -s ../infra/examples/config infra/.config; \
+	fi
+	@$(MAKE) setup-local ENV=test ORG=$(if $(ORG),$(ORG),$(TEST_ORG))
+	@if [ -L "infra/.config" ]; then \
+		rm infra/.config; \
+	fi
+	@$(MAKE) schemas
+	cd frontend && npm install && npx --yes vitest run
 
 test-backend:
 	@echo "Running backend tests (ORG=$(if $(ORG),$(ORG),$(TEST_ORG)))..."
+	@if [ ! -d "infra/.config" ]; then \
+		ln -s ../infra/examples/config infra/.config; \
+	fi
 	@$(MAKE) setup-local ENV=test ORG=$(if $(ORG),$(ORG),$(TEST_ORG))
+	@if [ -L "infra/.config" ]; then \
+		rm infra/.config; \
+	fi
 	cd backend && TESTING=true PYTHONPATH=. python -m pytest tests/ -v --tb=short || echo "No tests found"
 
 test-unit: test-backend test-frontend
@@ -658,7 +671,7 @@ test-e2e:
 	@echo "Running all e2e tests (ORG=$(if $(ORG),$(ORG),$(TEST_ORG)))..."
 	@$(MAKE) config ENV=test ORG=$(if $(ORG),$(ORG),$(TEST_ORG))
 	@if [ -d "frontend/tests/e2e" ]; then \
-		cd frontend && NODE_ENV=test npx playwright test --reporter=list ; \
+		cd frontend && npm install && NODE_ENV=test npx --yes playwright test --reporter=list ; \
 	else \
 		echo "No e2e tests found in frontend/tests/e2e/"; \
 	fi
@@ -667,7 +680,7 @@ test-e2e-reviewsubmit:
 	@echo "Running ReviewSubmitPanel component tests (ORG=$(if $(ORG),$(ORG),$(TEST_ORG)))..."
 	@$(MAKE) config ENV=test ORG=$(if $(ORG),$(ORG),$(TEST_ORG))
 	@if [ -d "frontend/tests/e2e/reviewsubmit" ]; then \
-		cd frontend && NODE_ENV=test npx playwright test --reporter=list tests/e2e/reviewsubmit; \
+		cd frontend && npm install && NODE_ENV=test npx --yes playwright test --reporter=list tests/e2e/reviewsubmit; \
 	else \
 		echo "ReviewSubmitPanel tests not found"; \
 	fi
@@ -679,27 +692,27 @@ test-e2e-integration:
 	@$(MAKE) start-backend ENV=test ORG=$(if $(ORG),$(ORG),$(TEST_ORG)) &
 	@sleep 3
 	@if [ -d "frontend/tests/integration" ]; then \
-		cd frontend && NODE_ENV=test npx playwright test --reporter=list tests/integration; \
+		cd frontend && npm install && NODE_ENV=test npx --yes playwright test --reporter=list tests/integration; \
 	else \
 		echo "Integration tests not found - running e2e with backend"; \
-		cd frontend && NODE_ENV=test npx playwright test --reporter=list; \
+		cd frontend && npm install && NODE_ENV=test npx --yes playwright test --reporter=list; \
 	fi
 	@pkill -f "uvicorn.*rawscribe.main" || true
 
 test-e2e-ui:
 	@echo "Running e2e tests with UI runner (ORG=$(if $(ORG),$(ORG),$(TEST_ORG)))..."
 	@$(MAKE) config ENV=test ORG=$(if $(ORG),$(ORG),$(TEST_ORG))
-	@cd frontend && NODE_ENV=test npx playwright test --ui --reporter=list
+	@cd frontend && npm install && NODE_ENV=test npx --yes playwright test --ui --reporter=list
 
 test-e2e-headed:
 	@echo "Running e2e tests with visible browser (ORG=$(if $(ORG),$(ORG),$(TEST_ORG)))..."
 	@$(MAKE) config ENV=test ORG=$(if $(ORG),$(ORG),$(TEST_ORG))
-	@cd frontend && NODE_ENV=test npx playwright test --headed
+	@cd frontend && npm install && NODE_ENV=test npx --yes playwright test --headed
 
 test-e2e-debug:
 	@echo "Running e2e tests in debug mode (ORG=$(if $(ORG),$(ORG),$(TEST_ORG)))..."
 	@$(MAKE) config ENV=test ORG=$(if $(ORG),$(ORG),$(TEST_ORG))
-	@cd frontend && NODE_ENV=test npx playwright test --debug
+	@cd frontend && npm install && NODE_ENV=test npx --yes playwright test --debug
 
 test-all: test-unit test-e2e
 	@if [ $$? -eq 0 ]; then \
@@ -739,7 +752,7 @@ test-ci:
 	@echo "Running CI tests with coverage (ORG=$(if $(ORG),$(ORG),$(TEST_ORG)))..."
 	@$(MAKE) setup-local ENV=test ORG=$(if $(ORG),$(ORG),$(TEST_ORG))
 	cd backend && TESTING=true conda run -n claire python -m pytest tests/ --cov=rawscribe --cov-report=xml || echo "No backend tests"
-	cd frontend && npx vitest run --coverage
+	cd frontend && npm install && npx --yes vitest run --coverage
 
 clean-test:
 	@echo "🧹 Cleaning frontend test artifacts..."

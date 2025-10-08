@@ -38,8 +38,8 @@ class ConfigLoader:
         try:
             # Check if we're in testing mode
             if os.environ.get('TESTING') == 'true':
-                # Read directly from test config
-                test_config_path = Path(__file__).parent.parent.parent.parent / 'infra' / '.config' / 'lambda' / 'test.json'
+                # Read from merged config file (created by make config)
+                test_config_path = Path('rawscribe/.config/config.json')
                 logger.info(f"TESTING mode: loading config from {test_config_path}")
                 
                 if test_config_path.exists():

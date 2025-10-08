@@ -9,9 +9,7 @@ import { existsSync, readFileSync } from 'fs'
 
 // Load configuration based on NODE_ENV
 const isTestMode = process.env.NODE_ENV === 'test';
-const configPath = isTestMode 
-  ? path.resolve(__dirname, '../infra/.config/webapp/test.json')
-  : path.resolve(__dirname, 'public/config.json');
+const configPath = path.resolve(__dirname, 'public/config.json');
 
 // Config will be loaded from file - no defaults to prevent misconfigurations
 let config = {
@@ -80,7 +78,7 @@ export default defineConfig({
       configureServer(server) {
         // Vite automatically serves files from public/ at root path
         // So config.json will be available at /config.json
-        const configSource = isTestMode ? 'infra/.config/webapp/test.json' : 'public/config.json';
+        const configSource = 'public/config.json';
         console.log(`📋 Serving webapp config from ${configSource} at /config.json`);
       }
     }

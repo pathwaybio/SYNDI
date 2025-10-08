@@ -1,0 +1,14 @@
+{
+  "lambda": {
+    "auth": {
+      "required": false,
+      "jwt": {
+        "secret": "o2_OyoLm5ecKQh_s0mPshgPNkm_cooY47U5_AGH3lAvVWiRcAuskDCQlHBlH67jrlPbZHR45171Pfa0nl6RzOBSTKYFrDkhGS90amCH4UES9Y8CeSqxUW4mzgKJQjjMEskFV6WEwowThRZsX4mQbF5CfRMIyy7SB2nXPBTfpNjzUr1W2nCXjQl0bDZmeVWgdbi5qGLTE7G_KDFLiyk3Huyj_bjWx_4sc9VgwU1MznWf3fmzqLWozTAxvRYZ_9NicZiflfI_x7MmguK-KX-kql0KHw_DLU-P_XUviRBjPYPSmJ0r3fV-gmkYJsCCd7ss4dD4hl57osLPu6W_P7K1SHw",
+        "algorithm": "HS256"
+      }
+    },
+    "cors": {
+      "allowedOrigins": ["http://localhost:3000", "http://localhost:5173", "http://localhost:8080", "https://uga-specific-domain.edu"]
+    }
+  }
+}

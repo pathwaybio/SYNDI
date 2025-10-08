@@ -1,0 +1,56 @@
+# SPDX-FileCopyrightText: 2024-2025 Pathway Bio, Inc. <https://pwbio.ai>
+# SPDX-FileContributor: Kimberly Robasky
+# SPDX-License-Identifier: Apache-2.0
+name: Tests
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test-backend:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+        cache: 'pip'
+        cache-dependency-path: 'backend/rawscribe/requirements.txt'
+    
+    - name: Install dependencies
+      run: pip install -r backend/rawscribe/requirements.txt
+    
+    - name: Run backend tests
+      run: make test-backend
+      env:
+        ENV: test
+        ORG: testorg
+
+  test-frontend:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+        cache-dependency-path: 'frontend/package-lock.json'
+    
+    - name: Install dependencies
+      working-directory: ./frontend
+      run: npm ci
+    
+    - name: Run frontend tests
+      run: make test-frontend
+      env:
+        ENV: test
+        ORG: testorg

@@ -1,0 +1,70 @@
+{
+    "lambda": {
+      "auth": {
+        "provider": "jwt",
+        "required": true,
+        "jwt": {
+          "secret": "dev-secret-this-is-only-for-local-development",
+          "algorithm": "HS256",
+          "issuer": "claire-dev",
+          "audience": "claire-backend",
+          "mockUsers": [
+            {
+              "id": "dev_admin",
+              "email": "admin@local.dev",
+              "username": "admin",
+              "password": "dev123456",
+              "name": "Development Admin",
+              "groups": ["admin"],
+              "permissions": ["*"],
+              "isAdmin": true
+            },
+            {
+              "id": "dev_researcher",
+              "email": "researcher@local.dev",
+              "username": "researcher",
+              "password": "dev123456",
+              "name": "Development Researcher",
+              "groups": ["researcher"],
+              "permissions": ["submit:*", "view:own"],
+              "isAdmin": false
+            },
+            {
+              "id": "dev_viewer",
+              "email": "viewer@local.dev",
+              "username": "viewer",
+              "password": "dev123456",
+              "name": "Development Viewer",
+              "groups": ["viewer"],
+              "permissions": ["view:own"],
+              "isAdmin": false
+            }
+          ]
+        }
+      },
+      "file_uploads": {
+        "max_file_size_mb": 25,
+        "max_total_upload_size_mb": 100,
+        "max_files_per_upload": 10,
+        "allowed_extensions": [".pdf", ".doc", ".docx", ".txt", ".xls", ".xlsx", ".csv", ".png", ".jpg", ".jpeg"],
+        "forbidden_extensions": [".exe", ".bat", ".sh", ".php", ".js"],
+        "temp_storage_retention_days": 30
+      },
+      "storage": {
+        "type": "local",
+        "local_path": ".local/s3",
+        "draft_bucket_name": "eln-drafts",
+        "eln_bucket_name": "eln",
+        "forms_bucket_name": "forms",
+        "sops_bucket_name": "sops"
+      },
+      "server": {
+        "host": "0.0.0.0",
+        "port": 8000
+      },
+      "cors": {
+        "allowedOrigins": ["http://localhost:3000", "http://localhost:5173", "http://localhost:8080"]
+      }
+    }
+  }
+  
