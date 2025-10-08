@@ -2,6 +2,7 @@
 Automated lab data capture enabling **AI-ready data**: AI extracts protocols, validates SOPs, collects compliant structured data
 
 [![Documentation Status](https://readthedocs.org/projects/syndi/badge/?version=latest)](https://syndi.readthedocs.io/en/latest/?badge=latest)
+[![Tests](https://github.com/pathwaybio/SYNDI/actions/workflows/test.yml/badge.svg)](https://github.com/pathwaybio/SYNDI/actions)
 
 ### The Three Core Components:
 
