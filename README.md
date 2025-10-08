@@ -1,6 +1,8 @@
 ## **SYNDI - Synthetic Intelligence for Data Integrity**
 Automated lab data capture enabling **AI-ready data**: AI extracts protocols, validates SOPs, collects compliant structured data
 
+[![Documentation Status](https://readthedocs.org/projects/syndi/badge/?version=latest)](https://syndi.readthedocs.io/en/latest/?badge=latest)
+
 ### The Three Core Components:
 
 1. **🤖 PAUL (Protocol Automation Librarian)**

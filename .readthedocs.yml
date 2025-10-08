@@ -1,8 +1,9 @@
-# SPDX-FileCopyrightText: 2024-2025 Pathway Bio, Inc. <https://pwbio.ai>
-# SPDX-FileContributor: Kimberly Robasky
-# SPDX-License-Identifier: Apache-2.0
-
 version: 2
+
+build:
+  os: ubuntu-24.04
+  tools:
+    python: "3.9.23"
 
 sphinx:
   configuration: docs/source/conf.py
