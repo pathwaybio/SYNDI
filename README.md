@@ -1,3 +1,5 @@
+<img width="563" height="129" alt="image" src="https://github.com/user-attachments/assets/38c11791-e65b-4c81-aa6f-1c8afd68be9e" />
+
 ## **SYNDI - Synthetic Intelligence for Data Integrity**
 Automated lab data capture enabling **AI-ready data**: AI extracts protocols, validates SOPs, collects compliant structured data
 
