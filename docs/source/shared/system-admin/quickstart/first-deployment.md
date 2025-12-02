@@ -52,14 +52,58 @@ aws sts get-caller-identity
 # Should output your account ID and user/role
 ```
 
+## Automatic Account-Level Setup
+
+During your first deployment, `make rs-deploy` automatically creates two account-wide resources if they don't exist:
+
+### 1. SAM Deployment Bucket
+
+**Name**: `rawscribe-sam-deployments-{account-id}`
+**Purpose**: SAM uses this bucket to upload Lambda artifacts (code and layers) before CloudFormation deployment.
+**Scope**: Account-wide - shared by all environments and organizations
+**When created**: Automatically on first `make rs-deploy` in your AWS account
+
+This bucket is separate from the application S3 buckets and is used exclusively by AWS SAM for deployment artifacts.
+
+### 2. API Gateway CloudWatch Logs Role
+
+**Name**: `APIGatewayCloudWatchLogsRole`
+**Purpose**: Allows API Gateway to write access logs and execution logs to CloudWatch Logs.
+**Scope**: Account-wide - required for all API Gateway stages with logging enabled
+**When created**: Automatically on first `make rs-deploy` in your AWS account
+
+This IAM role grants API Gateway permission to create log groups and streams in CloudWatch.
+
+### What You'll See
+
+On first deployment, you'll see output like:
+```
+📦 Creating SAM deployment bucket (one-time account setup)...
+   Bucket: rawscribe-sam-deployments-804320730777
+✅ SAM deployment bucket created and versioning enabled
+
+🔧 Configuring API Gateway CloudWatch Logs role (one-time account setup)...
+   Creating IAM role: APIGatewayCloudWatchLogsRole
+   Setting API Gateway account role: arn:aws:iam::804320730777:role/APIGatewayCloudWatchLogsRole
+✅ API Gateway CloudWatch Logs role configured
+```
+
+On subsequent deployments:
+```
+✅ SAM deployment bucket exists: rawscribe-sam-deployments-804320730777
+✅ API Gateway CloudWatch Logs role already configured
+```
+
+**These are one-time setups** - once created, they're reused for all future SYNDI deployments in your AWS account.
+
 ## Step-by-Step Deployment
 
 ### Step 1: Choose Environment and Organization
 
 ```bash
 # Set your parameters
-ENV=stage              # or prod
-ORG=myorg             # Your organization identifier
+export ENV=stage       # or prod
+export ORG=myorg       # Your organization identifier (change to your org)
 
 # Account ID (automatic)
 ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
@@ -83,9 +127,9 @@ Deploy all resources with one command:
 ```bash
 # Deploy with authentication and bucket creation
 ENABLE_AUTH=true CREATE_BUCKETS=true \
-  ADMIN_USERNAME=admin@myorg.com \
+  ADMIN_USERNAME=admin@${ORG}.com \
   ADMIN_PASSWORD=SecurePassword2025! \
-  ORG=myorg ENV=stage make rs-deploy
+  make rs-deploy
 ```
 
 **Parameters explained:**
@@ -108,7 +152,7 @@ ENABLE_AUTH=true CREATE_BUCKETS=true \
 
 **Expected output:**
 ```
-🚀 Deploying to stage for myorg with SAM...
+🚀 Deploying to stage for ${ORG} with SAM...
 Building Lambda with SAM...
 ✅ Copied requirements.txt to layer directory
 🔄 Building with layer caching...
@@ -117,7 +161,7 @@ Building Lambda with SAM...
 Deploying to AWS...
 [CloudFormation progress...]
 
-👤 Creating admin user admin@myorg.com...
+👤 Creating admin user admin@${ORG}.com...
 👥 Ensuring admin group exists...
 🔗 Adding user to admin group...
 🔐 Setting permanent password...
@@ -129,21 +173,21 @@ Deploying to AWS...
   SOPs list: ✅ Found 0 SOPs (none uploaded yet)
 
 ════════════════════════════════════════════════
-🎉 Deployment Complete: stage/myorg
+🎉 Deployment Complete: stage/${ORG}
 ════════════════════════════════════════════════
 📡 API Endpoint: https://abc123def.execute-api.us-east-1.amazonaws.com/stage
 🔐 User Pool ID: us-east-1_ABC123DEF
 🔑 Client ID: abc123def456ghi789
-👤 Admin User: admin@myorg.com
+👤 Admin User: admin@${ORG}.com
 🔒 Admin Pass: [set successfully]
 
 📋 Next Steps:
 1. Upload SOPs to S3:
-   aws s3 cp your-sop.yaml s3://rawscribe-forms-stage-myorg-288761742376/sops/
+   aws s3 cp your-sop.yaml s3://rawscribe-forms-stage-${ORG}-288761742376/sops/
 2. Check deployment status:
-   ORG=myorg ENV=stage make check-rs
+   make check-rs
 3. View CloudWatch logs:
-   aws logs tail /aws/lambda/rawscribe-stage-myorg-backend --follow
+   aws logs tail /aws/lambda/rawscribe-stage-${ORG}-backend --follow
 ════════════════════════════════════════════════
 ```
 
@@ -152,19 +196,19 @@ Deploying to AWS...
 After deployment, sync configuration files from CloudFormation outputs:
 
 ```bash
-make sync-configs ENV=stage ORG=myorg
+make sync-configs
 ```
 
 **What it does:**
 1. Queries CloudFormation stack for outputs
 2. Extracts API endpoint, Cognito User Pool ID, Client ID
-3. Updates `infra/.config/webapp/stage-myorg.json`
-4. Updates `infra/.config/lambda/stage-myorg.json`
+3. Updates `infra/.config/webapp/stage-${ORG}.json`
+4. Updates `infra/.config/lambda/stage-${ORG}.json`
 5. Preserves custom fields you may have added
 
 **Output:**
 ```
-🔍 Fetching outputs from stack: rawscribe-stage-myorg
+🔍 Fetching outputs from stack: rawscribe-stage-${ORG}
 
 📋 CloudFormation Outputs:
   ApiEndpoint: https://abc123.execute-api.us-east-1.amazonaws.com/stage
@@ -173,17 +217,17 @@ make sync-configs ENV=stage ORG=myorg
   CloudFrontURL: https://d1234567.cloudfront.net
 
 📝 Updating configuration files...
-✅ Updated org-specific config: infra/.config/webapp/stage-myorg.json
+✅ Updated org-specific config: infra/.config/webapp/stage-${ORG}.json
    (Custom fields preserved, CloudFormation values updated)
-✅ Updated org-specific lambda config: infra/.config/lambda/stage-myorg.json
+✅ Updated org-specific lambda config: infra/.config/lambda/stage-${ORG}.json
    (Custom fields preserved, CloudFormation values updated)
 
 ✅ Configuration sync complete!
 
 📌 Next steps:
-  1. Review changes: git diff infra/.config/webapp/stage-myorg.json
-  2. Test frontend: make start-frontend ENV=stage ORG=myorg
-  3. Commit if correct: git add infra/.config/webapp/stage-myorg.json
+  1. Review changes: git diff infra/.config/webapp/stage-${ORG}.json
+  2. Test frontend: make start-frontend
+  3. Commit if correct: git add infra/.config/webapp/stage-${ORG}.json
 ```
 
 ### Step 4: Review and Commit Configs
@@ -192,21 +236,21 @@ Review the auto-generated configuration files:
 
 ```bash
 # View webapp config
-cat infra/.config/webapp/stage-myorg.json | jq
+cat infra/.config/webapp/stage-${ORG}.json | jq
 
-# View lambda config  
-cat infra/.config/lambda/stage-myorg.json | jq
+# View lambda config
+cat infra/.config/lambda/stage-${ORG}.json | jq
 
 # See what changed
-git diff infra/.config/webapp/stage-myorg.json
-git diff infra/.config/lambda/stage-myorg.json
+git diff infra/.config/webapp/stage-${ORG}.json
+git diff infra/.config/lambda/stage-${ORG}.json
 ```
 
 **If using private config repo:**
 ```bash
 cd infra/.config
-git add webapp/stage-myorg.json lambda/stage-myorg.json
-git commit -m "Add stage-myorg configs with deployed resource IDs"
+git add webapp/stage-${ORG}.json lambda/stage-${ORG}.json
+git commit -m "Add stage-${ORG} configs with deployed resource IDs"
 git push
 cd ../..
 ```
@@ -218,14 +262,14 @@ Upload Standard Operating Procedures to the forms bucket:
 ```bash
 # Upload single SOP
 aws s3 cp your-sop.yaml \
-  s3://rawscribe-forms-stage-myorg-${ACCOUNT_ID}/sops/
+  s3://rawscribe-forms-stage-${ORG}-${ACCOUNT_ID}/sops/
 
 # Or upload directory of SOPs
 aws s3 sync ./sops-directory \
-  s3://rawscribe-forms-stage-myorg-${ACCOUNT_ID}/sops/
+  s3://rawscribe-forms-stage-${ORG}-${ACCOUNT_ID}/sops/
 
 # Verify upload
-aws s3 ls s3://rawscribe-forms-stage-myorg-${ACCOUNT_ID}/sops/
+aws s3 ls s3://rawscribe-forms-stage-${ORG}-${ACCOUNT_ID}/sops/
 ```
 
 ### Step 6: Test the Deployment
@@ -234,29 +278,29 @@ Verify everything works:
 
 ```bash
 # Check deployment status
-ORG=myorg ENV=stage make check-rs
+make check-rs
 ```
 
 **Output shows:**
 ```
-=== myorg Resources (stage) ===
-Lambda:      rawscribe-stage-myorg-backend
-API Gateway: rawscribe-stage-myorg-api
+=== ${ORG} Resources (stage) ===
+Lambda:      rawscribe-stage-${ORG}-backend
+API Gateway: rawscribe-stage-${ORG}-api
 API Endpoint: https://abc123.execute-api.us-east-1.amazonaws.com/stage/
-Stack Name:  rawscribe-stage-myorg
+Stack Name:  rawscribe-stage-${ORG}
 User Pool:   us-east-1_ABC123
 Client ID:   abc123def456
 S3 Buckets:
-     lambda:     rawscribe-lambda-stage-myorg-288761742376
-     forms:      rawscribe-forms-stage-myorg-288761742376
-     ELN:        rawscribe-eln-stage-myorg-288761742376
-     ELN drafts: rawscribe-eln-drafts-stage-myorg-288761742376
+     lambda:     rawscribe-lambda-stage-${ORG}-288761742376
+     forms:      rawscribe-forms-stage-${ORG}-288761742376
+     ELN:        rawscribe-eln-stage-${ORG}-288761742376
+     ELN drafts: rawscribe-eln-drafts-stage-${ORG}-288761742376
 ```
 
 **Test API endpoint:**
 ```bash
 API_ENDPOINT=$(aws cloudformation describe-stacks \
-  --stack-name rawscribe-stage-myorg \
+  --stack-name rawscribe-stage-${ORG} \
   --query 'Stacks[0].Outputs[?OutputKey==`ApiEndpoint`].OutputValue' \
   --output text)
 
@@ -268,8 +312,33 @@ curl ${API_ENDPOINT}/health
 
 **Test authentication:**
 ```bash
-make test-jwt-aws ENV=stage ORG=myorg
+# Set test credentials (use single quotes for passwords with special characters)
+export ${ORG^^}_TEST_USER=testresearcher@example.com
+export ${ORG^^}_TEST_PASSWORD='TestResearch123!'
+
+# Run authentication test
+make test-jwt-aws
 ```
+
+**Expected output:**
+```
+Testing JWT for ${ORG} on AWS...
+Found API Gateway: https://abc123.execute-api.us-east-1.amazonaws.com/stage
+✅ JWT token obtained (length: 1171)
+Testing protected endpoint...
+✅ Authentication successful!
+{
+  "id": "default-user",
+  "email": "default@localhost",
+  "username": "default",
+  "name": "Default User",
+  "groups": ["admin"],
+  "permissions": ["*"],
+  "isAdmin": true
+}
+```
+
+**Note:** Use **single quotes** for the password to prevent bash from interpreting special characters like `!`. The `${ORG^^}` syntax uppercases the ORG variable (e.g., if `ORG=myorg`, then `${ORG^^}_TEST_USER` becomes `MYORG_TEST_USER`).
 
 ### Step 7: Test Frontend
 
@@ -277,11 +346,11 @@ Start frontend locally pointing to deployed backend:
 
 ```bash
 # Frontend will use config.json with deployed API endpoint
-make start-frontend ENV=stage ORG=myorg
+make start-frontend
 ```
 
 Navigate to `http://localhost:3000` and:
-1. Login with admin@myorg.com / SecurePassword2025!
+1. Login with admin@${ORG}.com / SecurePassword2025!
 2. Verify SOP list loads
 3. Test creating a draft
 4. Test submitting an ELN
@@ -342,11 +411,11 @@ Example: `rawscribe-stage-myorg`
 **Solution:**
 ```bash
 # Check existing stack
-aws cloudformation describe-stacks --stack-name rawscribe-stage-myorg
+aws cloudformation describe-stacks --stack-name rawscribe-stage-${ORG}
 
 # Either use different ORG name or delete existing stack
-aws cloudformation delete-stack --stack-name rawscribe-stage-myorg
-aws cloudformation wait stack-delete-complete --stack-name rawscribe-stage-myorg
+aws cloudformation delete-stack --stack-name rawscribe-stage-${ORG}
+aws cloudformation wait stack-delete-complete --stack-name rawscribe-stage-${ORG}
 ```
 
 ### "Bucket name already taken"
@@ -356,7 +425,7 @@ aws cloudformation wait stack-delete-complete --stack-name rawscribe-stage-myorg
 **Solution:**
 ```bash
 # Use CREATE_BUCKETS=false if buckets exist
-CREATE_BUCKETS=false ENABLE_AUTH=true ORG=myorg ENV=stage make rs-deploy
+CREATE_BUCKETS=false ENABLE_AUTH=true make rs-deploy
 
 # Or choose different ORG name
 ```
@@ -407,13 +476,13 @@ After deployment, verify:
 **Verification commands:**
 ```bash
 # Stack status
-make check-rs-stack-status ENV=stage ORG=myorg
+make check-rs-stack-status
 
 # Complete check
-make check-rs ENV=stage ORG=myorg
+make check-rs
 
 # Test auth
-make test-jwt-aws ENV=stage ORG=myorg
+make test-jwt-aws
 ```
 
 ## Next Steps
@@ -422,7 +491,7 @@ After successful first deployment:
 
 1. **Create Additional Users**: See [User Management](../authentication/user-management.md)
 2. **Upload SOPs**: Add your organization's SOPs to forms bucket
-3. **Customize Configs**: Edit `infra/.config/lambda/stage-myorg.json` for org-specific settings
+3. **Customize Configs**: Edit `infra/.config/lambda/stage-${ORG}.json` for org-specific settings
 4. **Deploy Frontend**: Build and deploy frontend to CloudFront (TBD)
 5. **Setup Monitoring**: Configure CloudWatch alarms and dashboards
 6. **Document Procedures**: Create runbook for your organization
@@ -433,11 +502,12 @@ After successful first deployment:
 For production deployment (first time):
 
 ```bash
-# Production deployment with confirmation
+# Production deployment with confirmation (set ENV=prod first)
+export ENV=prod
 ENABLE_AUTH=true CREATE_BUCKETS=true \
-  ADMIN_USERNAME=admin@myorg.com \
+  ADMIN_USERNAME=admin@${ORG}.com \
   ADMIN_PASSWORD=ProductionPassword2025! \
-  ORG=myorg ENV=prod make rs-deploy
+  make rs-deploy
 ```
 
 **Production differences:**
@@ -461,17 +531,16 @@ After initial deployment, use different commands for updates:
 
 ```bash
 # Code changes only (30 seconds)
-make rs-deploy-function ENV=stage ORG=myorg
+make rs-deploy-function
 
 # Config changes (1-2 minutes)
-make rs-deploy-only ENV=stage ORG=myorg
+make rs-deploy-only
 
 # Infrastructure changes (5-7 minutes)
-ENABLE_AUTH=true CREATE_BUCKETS=false \
-  ORG=myorg ENV=stage make rs-deploy
+ENABLE_AUTH=true CREATE_BUCKETS=false make rs-deploy
 
 # Always sync after infrastructure changes
-make sync-configs ENV=stage ORG=myorg
+make sync-configs
 ```
 
 **Note:** Use `CREATE_BUCKETS=false` for subsequent deployments (buckets already exist).

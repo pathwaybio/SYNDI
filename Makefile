@@ -621,9 +621,18 @@ start-frontend:
 		echo "❌ ORG parameter required. Usage: make start-frontend ENV=dev ORG=<org>"; \
 		exit 1; \
 	fi
+	@if [ ! -d "frontend/node_modules" ]; then \
+		echo "❌ Frontend dependencies not installed"; \
+		echo ""; \
+		echo "Run: cd frontend && npm install"; \
+		echo ""; \
+		exit 1; \
+	fi
 	@echo "ENV=$(ENV) ORG=$(ORG)"
 	@echo "To exit, press Ctrl+C"
 	@$(MAKE) config ENV=$(ENV) ORG=$(ORG)
+	@echo "📋 Generating TypeScript schemas..."
+	@$(MAKE) schemas
 	cd frontend && npm run dev
 
 start-dev:
@@ -1144,6 +1153,63 @@ rs-deploy: rs-build
 	$(eval AWS_REGION := $(shell $(GET_AWS_REGION)))
 	$(eval ACCOUNT_NUMBER := $(shell $(GET_ACCOUNT_NUMBER)))
 	$(eval STACK_NAME := rawscribe-$(ENV)-$(ORG))
+	@# Check for failed stack and clean up automatically
+	@STACK_STATUS=$$(aws cloudformation describe-stacks --stack-name $(STACK_NAME) --region $(AWS_REGION) --query 'Stacks[0].StackStatus' --output text 2>/dev/null || echo "NONE"); \
+	if [ "$$STACK_STATUS" = "ROLLBACK_COMPLETE" ] || [ "$$STACK_STATUS" = "ROLLBACK_FAILED" ]; then \
+		echo "⚠️  Stack in $$STACK_STATUS state - automatic cleanup required"; \
+		echo "   Deleting failed stack: $(STACK_NAME)..."; \
+		aws cloudformation delete-stack --stack-name $(STACK_NAME) --region $(AWS_REGION); \
+		echo "   Waiting for deletion to complete..."; \
+		aws cloudformation wait stack-delete-complete --stack-name $(STACK_NAME) --region $(AWS_REGION); \
+		echo "✅ Failed stack deleted, proceeding with fresh deployment"; \
+	elif [ "$$STACK_STATUS" != "NONE" ] && [ "$$STACK_STATUS" != "CREATE_COMPLETE" ] && [ "$$STACK_STATUS" != "UPDATE_COMPLETE" ]; then \
+		echo "⚠️  Stack is in $$STACK_STATUS state"; \
+		echo "   You may need to wait for current operation to complete or manually clean up"; \
+	fi
+	@# Ensure SAM deployment bucket exists (one-time account setup)
+	@if ! aws s3 ls s3://rawscribe-sam-deployments-$(ACCOUNT_NUMBER) --region $(AWS_REGION) >/dev/null 2>&1; then \
+		echo "📦 Creating SAM deployment bucket (one-time account setup)..."; \
+		echo "   Bucket: rawscribe-sam-deployments-$(ACCOUNT_NUMBER)"; \
+		aws s3 mb s3://rawscribe-sam-deployments-$(ACCOUNT_NUMBER) --region $(AWS_REGION); \
+		aws s3api put-bucket-versioning \
+			--bucket rawscribe-sam-deployments-$(ACCOUNT_NUMBER) \
+			--versioning-configuration Status=Enabled \
+			--region $(AWS_REGION); \
+		echo "✅ SAM deployment bucket created and versioning enabled"; \
+	else \
+		echo "✅ SAM deployment bucket exists: rawscribe-sam-deployments-$(ACCOUNT_NUMBER)"; \
+	fi
+	@# Ensure API Gateway CloudWatch Logs role exists (one-time account setup)
+	@CURRENT_ROLE=$$(aws apigateway get-account --query 'cloudwatchRoleArn' --output text --region $(AWS_REGION) 2>/dev/null || echo "None"); \
+	if [ "$$CURRENT_ROLE" = "None" ] || [ -z "$$CURRENT_ROLE" ]; then \
+		echo "🔧 Configuring API Gateway CloudWatch Logs role (one-time account setup)..."; \
+		if ! aws iam get-role --role-name APIGatewayCloudWatchLogsRole >/dev/null 2>&1; then \
+			echo "   Creating IAM role: APIGatewayCloudWatchLogsRole"; \
+			aws iam create-role \
+				--role-name APIGatewayCloudWatchLogsRole \
+				--assume-role-policy-document '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"Service":"apigateway.amazonaws.com"},"Action":"sts:AssumeRole"}]}' \
+				--output text >/dev/null 2>&1 || echo "   (Role may already exist)"; \
+			echo "   Attaching CloudWatch Logs policy..."; \
+			aws iam attach-role-policy \
+				--role-name APIGatewayCloudWatchLogsRole \
+				--policy-arn arn:aws:iam::aws:policy/service-role/AmazonAPIGatewayPushToCloudWatchLogs \
+				2>&1 | grep -v "attached" || true; \
+			echo "   Waiting for IAM role to propagate (15 seconds)..."; \
+			sleep 15; \
+		fi; \
+		ROLE_ARN=$$(aws iam get-role --role-name APIGatewayCloudWatchLogsRole --query 'Role.Arn' --output text); \
+		echo "   Setting API Gateway account role: $$ROLE_ARN"; \
+		if aws apigateway update-account \
+			--patch-operations op=replace,path=/cloudwatchRoleArn,value=$$ROLE_ARN \
+			--region $(AWS_REGION) >/dev/null 2>&1; then \
+			echo "✅ API Gateway CloudWatch Logs role configured"; \
+		else \
+			echo "⚠️  API Gateway role set failed - may need more propagation time"; \
+			echo "   This is non-critical and will be configured on next deployment"; \
+		fi; \
+	else \
+		echo "✅ API Gateway CloudWatch Logs role already configured"; \
+	fi
 	@# Auto-detect CREATE_BUCKETS based on stack existence
 	@# Once a stack is created, we ALWAYS use CREATE_BUCKETS=true to keep CloudFormation managing buckets
 	@STACK_EXISTS=$$(aws cloudformation describe-stacks --stack-name $(STACK_NAME) --region $(AWS_REGION) 2>/dev/null && echo "true" || echo "false"); \
@@ -2413,12 +2479,12 @@ test-jwt-aws:
 	$(eval AWS_REGION := $(shell $(GET_AWS_REGION)))
 	@if [ -z "$(ORG)" ]; then echo "Error: ORG parameter required. Usage: make test-jwt-aws ENV=stage ORG=pwb"; exit 1; fi
 	@echo "Testing JWT for $(ORG) on AWS..."
-	@API_ID=$$(aws apigateway get-rest-apis --query "items[?name=='rawscribe-$(ENV)-$(ORG)-api'].id | [0]" --output text --region $$AWS_REGION); \
+	@API_ID=$$(aws apigateway get-rest-apis --query "items[?name=='rawscribe-$(ENV)-$(ORG)-api'].id | [0]" --output text --region $(AWS_REGION)); \
 	if [ -z "$$API_ID" ] || [ "$$API_ID" = "None" ]; then \
 		echo "API Gateway not found for rawscribe-$(ENV)-$(ORG)-api"; \
 		exit 1; \
 	fi; \
-	API_URL="https://$$API_ID.execute-api.$$AWS_REGION.amazonaws.com/$(ENV)"; \
+	API_URL="https://$$API_ID.execute-api.$(AWS_REGION).amazonaws.com/$(ENV)"; \
 	echo "Found API Gateway: $$API_URL"; \
 	TEST_USER=$${$(shell echo $(ORG) | tr '[:lower:]' '[:upper:]')_TEST_USER}; \
 	TEST_PASS=$${$(shell echo $(ORG) | tr '[:lower:]' '[:upper:]')_TEST_PASSWORD}; \
@@ -2427,15 +2493,28 @@ test-jwt-aws:
 		echo "                      export $(shell echo $(ORG) | tr '[:lower:]' '[:upper:]')_TEST_PASSWORD=<password>"; \
 		exit 1; \
 	fi; \
-	POOL_ID=$$(aws cognito-idp list-user-pools --max-results 60 --query "UserPools[?contains(Name,'rawscribe-$(ENV)-$(ORG)')].Id | [0]" --output text --region $$AWS_REGION); \
+	POOL_ID=$$(aws cognito-idp list-user-pools --max-results 60 --query "UserPools[?contains(Name,'rawscribe-$(ENV)-$(ORG)')].Id | [0]" --output text --region $(AWS_REGION)); \
 	if [ -z "$$POOL_ID" ] || [ "$$POOL_ID" = "None" ]; then \
 		echo "User Pool not found for rawscribe-$(ENV)-$(ORG)"; \
 		exit 1; \
 	fi; \
-	CLIENT_ID=$$(aws cognito-idp list-user-pool-clients --user-pool-id $$POOL_ID --query "UserPoolClients[0].ClientId" --output text --region $$AWS_REGION); \
-	JWT=$$(aws cognito-idp admin-initiate-auth --user-pool-id $$POOL_ID --client-id $$CLIENT_ID --auth-flow ADMIN_USER_PASSWORD_AUTH --auth-parameters USERNAME=$$TEST_USER,PASSWORD=$$TEST_PASS --region $$AWS_REGION --query 'AuthenticationResult.IdToken' --output text); \
+	CLIENT_ID=$$(aws cognito-idp list-user-pool-clients --user-pool-id $$POOL_ID --query "UserPoolClients[0].ClientId" --output text --region $(AWS_REGION)); \
+	JWT=$$(aws cognito-idp admin-initiate-auth --user-pool-id $$POOL_ID --client-id $$CLIENT_ID --auth-flow ADMIN_USER_PASSWORD_AUTH --auth-parameters "USERNAME=$$TEST_USER,PASSWORD=$$TEST_PASS" --region $(AWS_REGION) --query 'AuthenticationResult.IdToken' --output text); \
+	if [ -z "$$JWT" ]; then \
+		echo "❌ Failed to get JWT token"; \
+		exit 1; \
+	fi; \
+	echo "✅ JWT token obtained (length: $${#JWT})"; \
 	echo "Testing protected endpoint..."; \
-	curl -s -H "Authorization: Bearer $$JWT" $$API_URL/api/config/private | jq '.lambda.auth.cognito'
+	RESPONSE=$$(curl -s -H "Authorization: Bearer $$JWT" $$API_URL/api/config/private); \
+	if echo "$$RESPONSE" | jq -e '.user' >/dev/null 2>&1; then \
+		echo "✅ Authentication successful!"; \
+		echo "$$RESPONSE" | jq '.user'; \
+	else \
+		echo "❌ Unexpected response:"; \
+		echo "$$RESPONSE" | jq .; \
+		exit 1; \
+	fi
 
 test-jwt-regression:
 	@echo "Running JWT authentication regression tests..."
